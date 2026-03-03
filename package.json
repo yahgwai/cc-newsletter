@@ -4,6 +4,7 @@
   "scripts": {
     "sync": "tsx sync.ts",
     "summarise": "flock -n .summarise.lock tsx summarise.ts",
+    "ingest": "npm run sync && npm run summarise",
     "collect": "tsx recent-headers.ts",
     "prepare": "tsx prepare-articles.ts",
     "pdf": "bash -c 'pandoc newsletters/$0.md -t html --css newsletters/style.css -o newsletters/$0.pdf --pdf-engine=weasyprint'",
