@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { slugify, entrySlug, formatEntry, syncFeed } from "./sync-lib.js";
+import { slugify, entrySlug, formatHeader, formatEntry, syncFeed } from "./sync-lib.js";
 
 describe("slugify", () => {
   it("lowercases and replaces spaces", () => {
@@ -48,18 +48,34 @@ describe("entrySlug", () => {
   });
 });
 
-describe("formatEntry", () => {
-  it("formats a full entry", () => {
-    const md = formatEntry({
+describe("formatHeader", () => {
+  it("formats header as YAML with ISO date", () => {
+    const yaml = formatHeader({
       title: "Test Post",
       link: "https://example.com/post",
       pubDate: "2026-02-26T12:00:00Z",
-      content: "<p>Hello <strong>world</strong></p>",
     });
 
+    expect(yaml).toContain('title: "Test Post"');
+    expect(yaml).toContain('link: "https://example.com/post"');
+    expect(yaml).toContain('date: "2026-02-26T12:00:00.000Z"');
+  });
+
+  it("handles missing fields gracefully", () => {
+    const yaml = formatHeader({});
+    expect(yaml).toContain('title: "Untitled"');
+    expect(yaml).toContain('link: ""');
+    expect(yaml).toContain('date: ""');
+  });
+});
+
+describe("formatEntry", () => {
+  it("includes title as h1 and converts HTML content", () => {
+    const md = formatEntry({
+      title: "Test Post",
+      content: "<p>Hello <strong>world</strong></p>",
+    });
     expect(md).toContain("# Test Post");
-    expect(md).toContain("- **Link:** https://example.com/post");
-    expect(md).toContain("- **Date:** 2026-02-26");
     expect(md).toContain("Hello **world**");
   });
 
@@ -77,11 +93,9 @@ describe("formatEntry", () => {
     expect(md).toContain("summary text");
   });
 
-  it("handles missing fields gracefully", () => {
+  it("defaults title to Untitled", () => {
     const md = formatEntry({});
     expect(md).toContain("# Untitled");
-    expect(md).toContain("- **Link:** ");
-    expect(md).toContain("- **Date:** ");
   });
 });
 
@@ -117,26 +131,34 @@ describe("syncFeed", () => {
     ],
   };
 
-  function mockParser(feed: unknown) {
+  function mockFetch(feed: unknown) {
     const Parser = require("rss-parser");
-    vi.spyOn(Parser.prototype, "parseURL").mockResolvedValue(feed);
+    vi.spyOn(Parser.prototype, "parseString").mockResolvedValue(feed);
+    vi.spyOn(global, "fetch").mockImplementation(async () =>
+      new Response("", { status: 200 })
+    );
   }
 
-  it("writes files for each entry", async () => {
-    mockParser(mockFeed);
+  it("writes content and header files for each entry", async () => {
+    mockFetch(mockFeed);
     const written = await syncFeed("https://example.com/feed.xml", tmpDir);
 
     expect(written).toHaveLength(2);
     expect(existsSync(join(tmpDir, "example-com", "post-1.md"))).toBe(true);
+    expect(existsSync(join(tmpDir, "example-com", "post-1-header.yaml"))).toBe(true);
     expect(existsSync(join(tmpDir, "example-com", "post-2.md"))).toBe(true);
+    expect(existsSync(join(tmpDir, "example-com", "post-2-header.yaml"))).toBe(true);
 
     const content = readFileSync(join(tmpDir, "example-com", "post-1.md"), "utf-8");
-    expect(content).toContain("# First Post");
     expect(content).toContain("Content one");
+
+    const header = readFileSync(join(tmpDir, "example-com", "post-1-header.yaml"), "utf-8");
+    expect(header).toContain('title: "First Post"');
+    expect(header).toContain('date: "2026-01-01T00:00:00.000Z"');
   });
 
   it("skips existing files (deduplication)", async () => {
-    mockParser(mockFeed);
+    mockFetch(mockFeed);
 
     const first = await syncFeed("https://example.com/feed.xml", tmpDir);
     expect(first).toHaveLength(2);
@@ -146,7 +168,7 @@ describe("syncFeed", () => {
   });
 
   it("re-creates deleted files", async () => {
-    mockParser(mockFeed);
+    mockFetch(mockFeed);
 
     await syncFeed("https://example.com/feed.xml", tmpDir);
     rmSync(join(tmpDir, "example-com", "post-1.md"));
@@ -157,7 +179,7 @@ describe("syncFeed", () => {
   });
 
   it("handles entries with only summary", async () => {
-    mockParser({
+    mockFetch({
       title: "Summary Blog",
       items: [{ guid: "s1", summary: "<p>Just a summary</p>" }],
     });
@@ -168,7 +190,7 @@ describe("syncFeed", () => {
   });
 
   it("handles entries with no content", async () => {
-    mockParser({
+    mockFetch({
       title: "Empty Blog",
       items: [{ guid: "e1", title: "Empty" }],
     });
@@ -194,13 +216,15 @@ describe("error isolation", () => {
   it("one failing feed does not block others", async () => {
     const Parser = require("rss-parser");
     let callCount = 0;
-    vi.spyOn(Parser.prototype, "parseURL").mockImplementation(async (url: string) => {
+    vi.spyOn(Parser.prototype, "parseString").mockResolvedValue({
+      title: "Good Blog",
+      items: [{ guid: "g1", title: "Good Post", content: "<p>ok</p>" }],
+    });
+    vi.spyOn(global, "fetch").mockImplementation(async (input: RequestInfo | URL) => {
       callCount++;
-      if (url === "https://bad.com/feed.xml") throw new Error("network error");
-      return {
-        title: "Good Blog",
-        items: [{ guid: "g1", title: "Good Post", content: "<p>ok</p>" }],
-      };
+      const url = typeof input === "string" ? input : input.toString();
+      if (url === "https://bad.com/feed.xml") return new Response("", { status: 500 });
+      return new Response("", { status: 200 });
     });
 
     // Simulate what sync.ts does: try/catch per feed

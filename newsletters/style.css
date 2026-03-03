@@ -1,0 +1,132 @@
+@page {
+  size: A4;
+  margin: 25mm 20mm;
+
+  @bottom-center {
+    content: counter(page);
+    font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+    font-size: 8px;
+    color: #666;
+  }
+}
+
+body {
+  font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 8.5pt;
+  line-height: 1.7;
+  color: #1a1a1a;
+  background: #ffffff;
+  max-width: 100%;
+}
+
+/* Title */
+h1 {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 20pt;
+  font-weight: 700;
+  border-bottom: 2px solid #333;
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+  margin-top: 0;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+/* Section headings */
+h2 {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 13pt;
+  font-weight: 600;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  color: #2d4f8e;
+  page-break-after: avoid;
+  letter-spacing: -0.3px;
+}
+
+h3 {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 11pt;
+  font-weight: 600;
+  margin-top: 22px;
+  margin-bottom: 8px;
+  color: #2d6f8e;
+  page-break-after: avoid;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 12px;
+  orphans: 3;
+  widows: 3;
+}
+
+a {
+  color: #2d4f8e;
+  text-decoration: none;
+  border-bottom: 1px solid #ccc;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 26px 0;
+}
+
+blockquote {
+  border-left: 3px solid #7c6faa;
+  margin: 16px 0;
+  padding: 4px 0 4px 16px;
+  color: #444;
+  font-style: italic;
+}
+
+blockquote p {
+  margin-bottom: 4px;
+}
+
+/* Inline code */
+code {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  background: #f0f2f5;
+  color: #2e7d32;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9pt;
+}
+
+/* Code blocks */
+pre {
+  background: #f0f2f5;
+  border: 1px solid #ddd;
+  padding: 12px 14px;
+  border-radius: 4px;
+  font-size: 9pt;
+  line-height: 1.5;
+  page-break-inside: avoid;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: #333;
+}
+
+ul, ol {
+  padding-left: 22px;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+li {
+  margin-bottom: 6px;
+}
+
+li > p {
+  margin-bottom: 4px;
+}
+
+strong {
+  color: #111;
+}

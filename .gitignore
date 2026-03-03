@@ -2,3 +2,5 @@ node_modules/
 feeds/
 feeds.json
 discovery/
+.summarise.lock
+discovered-feeds.json
