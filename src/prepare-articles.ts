@@ -1,13 +1,9 @@
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
+import { FEEDS_DIR, wordCount } from "./util.js";
 
-const FEEDS_DIR = "./feeds";
 const AFFINITY_THRESHOLD = 50_000;
-
-function wordCount(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
-}
 
 const evaluationsFile = process.argv[2];
 const outputDir = process.argv[3];
@@ -96,7 +92,7 @@ for (const entry of entries) {
 
 if (totalWords <= AFFINITY_THRESHOLD) {
   const chunksDir = join(outputDir, "single");
-  execSync(`npx tsx chunk-articles.ts ${includesPath} ${chunksDir}`, {
+  execSync(`npx tsx src/chunk-articles.ts ${includesPath} ${chunksDir}`, {
     stdio: "inherit",
   });
   console.log(
@@ -108,6 +104,6 @@ if (totalWords <= AFFINITY_THRESHOLD) {
   );
   console.log("Write group files to the output dir, then run:");
   console.log(
-    "  npx tsx chunk-articles.ts <group-file> <output-dir>/group-N"
+    "  npx tsx src/chunk-articles.ts <group-file> <output-dir>/group-N"
   );
 }

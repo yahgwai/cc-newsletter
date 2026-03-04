@@ -14,10 +14,10 @@ The core insight: **collection and consumption are separate problems.** Cast a w
 
 ## Pipeline
 
-1. **Discover** — `/discover {subject}` — agent searches the web, finds relevant sites, appends their URLs to `discovery/found.txt`
-2. **Extract feeds** — `npx tsx discover-feeds.ts` — mechanically finds RSS/Atom feeds from discovered URLs
+1. **Discover** — `/discover {subject}` — agent searches the web, finds relevant sites, appends their URLs to `data/discovery/found.txt`
+2. **Extract feeds** — `npx tsx src/discover-feeds.ts` — mechanically finds RSS/Atom feeds from discovered URLs
 3. **Sync** — `npm run sync` — fetches all feeds, converts entries to Markdown files
-4. **Summarise** — `npx tsx summarise.ts` — sends articles to Claude Haiku for summarisation
+4. **Summarise** — `npm run summarise` — sends articles to Claude Haiku for summarisation
 
 Run `/discover` again or say "find more" to expand coverage iteratively. No structured depth control — just natural language: "find me RSS feeds about development with Claude Code — cast a wide net."
 
@@ -31,10 +31,10 @@ Agents do the searching and judgment. Scripts do the mechanical work.
 - Manages the iterative "find more" loop
 
 **What scripts do:**
-- `append-found.ts` — deduplicates and appends URLs to `found.txt`
-- `discover-feeds.ts` — mechanical feed extraction (HTML autodiscovery, known platform patterns, common path probing)
-- `sync-lib.ts` / `sync.ts` — fetches feeds, converts to Markdown, writes to disk
-- `summarise.ts` — batches articles and sends to Claude Haiku for summarisation
+- `src/append-found.ts` — deduplicates and appends URLs to `found.txt`
+- `src/discover-feeds.ts` — mechanical feed extraction (HTML autodiscovery, known platform patterns, common path probing)
+- `src/sync-lib.ts` / `src/sync.ts` — fetches feeds, converts to Markdown, writes to disk
+- `src/summarise.ts` — batches articles and sends to Claude Haiku for summarisation
 
 The discover prompt runs as a Claude Code skill in the main conversation, not as a subagent. This allows steering ("find more," "focus on GitHub repos") without indirection.
 
@@ -55,9 +55,9 @@ The agent implicitly prioritises core sources first, and moves into the long tai
 
 ### One working file
 
-`discovery/found.txt` — one URL per line. No categories, no todo/done split. The agent can infer what's been searched from what's been found. Redundant searches are cheap.
+`data/discovery/found.txt` — one URL per line. No categories, no todo/done split. The agent can infer what's been searched from what's been found. Redundant searches are cheap.
 
-URL deduplication is done by prompt instruction ("store the most canonical URL") plus exact dedup in `append-found.ts`. No mechanical URL normalisation.
+URL deduplication is done by prompt instruction ("store the most canonical URL") plus exact dedup in `src/append-found.ts`. No mechanical URL normalisation.
 
 ### Categories as prompt hints
 
@@ -67,7 +67,7 @@ The discover skill prompt includes category hints — "consider official sources
 
 Expanding the reference graph (scanning collected content for links to new sources) was discussed and shelved. It's expensive (requires LLM processing of all content), noisy (links go to irrelevant sites), and the search-based discovery may be sufficient. Can be revisited later.
 
-## Feed Extraction (`discover-feeds.ts`)
+## Feed Extraction (`src/discover-feeds.ts`)
 
 Three strategies tried in order for each URL:
 
@@ -77,13 +77,13 @@ Three strategies tried in order for each URL:
 
 Sites that won't have standard RSS are skipped (GitHub, Discord, Twitter/X, YouTube, Spotify, npm, arxiv, Reddit, etc.).
 
-Results are cached in `discovery/checked.json`. URLs where no feed was found go to `discovery/no-feed.txt`, skipped URLs to `discovery/skipped.txt`.
+Results are cached in `data/discovery/checked.json`. URLs where no feed was found go to `data/discovery/no-feed.txt`, skipped URLs to `data/discovery/skipped.txt`.
 
 ## Feed Metadata (intentionally absent)
 
 A structured schema was proposed (`tier`, `type`, `scope`, `name` per feed) and rejected. It was designing for a consumption system that doesn't exist yet.
 
-`feeds.json` is a flat array of URL strings. If metadata is needed later, it's cheap to add — re-run discovery or enrich existing entries.
+`data/feeds.json` is a flat array of URL strings. If metadata is needed later, it's cheap to add — re-run discovery or enrich existing entries.
 
 ## Downstream Processing
 
@@ -100,12 +100,12 @@ This can't be solved at discovery time. It requires cross-referencing at consump
 
 ### Summarisation (built)
 
-`summarise.ts` processes articles that don't yet have summaries:
+`src/summarise.ts` processes articles that don't yet have summaries:
 - Batches by token count (80K max) and article count (20 max per batch)
 - Sends to Claude Haiku via the `claude` CLI with structured JSON output
 - Writes a summary (1–10 sentences, scaled to content depth) and mentions list to each article's header YAML
 - Handles empty/stub content without calling the LLM
-- Runs batches in parallel (default 3) with rate limiting
+- Runs batches in parallel (default 10) with rate limiting
 
 ### Relevance checking (lightweight approach, not yet built)
 

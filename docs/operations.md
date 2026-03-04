@@ -21,8 +21,9 @@ npm run ingest
 ```
 
 This syncs all RSS feeds and summarises any new articles. Sync fetches from
-every feed in `feeds.json` and writes articles to `feeds/`. Summarise picks
-up any articles without summaries and sends them to Claude Haiku in batches.
+every feed in `data/feeds.json` and writes articles to `data/feeds/`. Summarise
+picks up any articles without summaries and sends them to Claude Haiku in
+batches.
 
 The summarise step uses a lock file (`.summarise.lock`) so concurrent runs
 don't collide.
@@ -32,8 +33,8 @@ don't collide.
 When you want to expand coverage:
 
 1. Run `/discover` in Claude Code — the agent searches the web and appends
-   URLs to `discovery/found.txt`
-2. Extract feeds: `npx tsx discover-feeds.ts`
+   URLs to `data/discovery/found.txt`
+2. Extract feeds: `npx tsx src/discover-feeds.ts`
 3. Run `npm run ingest` to pull content from the new feeds
 
 Discovery is iterative. Say "find more" or "focus on security blogs" to
@@ -66,20 +67,34 @@ are run by Claude Code using subagents.
 ## File layout
 
 ```
-feeds.json              # list of RSS feed URLs
-feeds/                  # synced articles (gitignored)
-  {domain}/
-    {slug}-header.yaml  # metadata: title, link, date, summary, mentions
-    {slug}.md           # full article content
-discovery/              # feed discovery working files (gitignored)
-  found.txt             # discovered URLs
-  checked.json          # feed extraction cache
+src/                    # source code
+  sync.ts               # entry point: sync all feeds
+  sync-lib.ts           # RSS parsing, HTML conversion, dedup
+  summarise.ts          # batch summarisation pipeline
+  discover-feeds.ts     # mechanical feed extraction from URLs
+  append-found.ts       # dedup + append to found.txt
+  recent-headers.ts     # collect recent headers into chunks
+  prepare-articles.ts   # parse evaluations, prepare for writing
+  chunk-articles.ts     # chunk article list with full content
+  chunk-headers.ts      # chunk header list
+  combine-lists.ts      # dedup + merge text files
+  util.ts               # shared utilities (word count, chunking)
+  *.test.ts             # tests
+data/
+  feeds.json            # list of RSS feed URLs (gitignored)
+  feeds/                # synced articles (gitignored)
+    {domain}/
+      {slug}-header.yaml  # metadata: title, link, date, summary, mentions
+      {slug}.md           # full article content
+  discovery/            # feed discovery working files (gitignored)
+    found.txt           # discovered URLs
+    checked.json        # feed extraction cache
+  newsletters/
+    style.css           # PDF stylesheet
+    YYYY-MM-DD.md       # generated newsletters
+    YYYY-MM-DD.pdf      # PDF versions
 docs/
   project-design.md     # design rationale for the collection system
   newsletter-design.md  # newsletter format, tone, and production pipeline
   operations.md         # this file
-newsletters/
-  style.css             # PDF stylesheet
-  YYYY-MM-DD.md         # generated newsletters
-  YYYY-MM-DD.pdf        # PDF versions
 ```

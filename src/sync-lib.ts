@@ -67,7 +67,7 @@ export function formatEntry(item: {
   return `# ${item.title ?? "Untitled"}\n\n${content}\n`;
 }
 
-export async function syncFeed(url: string, baseDir = "feeds"): Promise<string[]> {
+export async function syncFeed(url: string, baseDir = "data/feeds"): Promise<string[]> {
   const feed = await fetchFeed(url);
   const feedSlug = slugify(new URL(url).hostname);
   const dir = `${baseDir}/${feedSlug}`;

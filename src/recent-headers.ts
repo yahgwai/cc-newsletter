@@ -1,8 +1,6 @@
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from "fs";
+import { readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
-
-const FEEDS_DIR = "./feeds";
-const WORDS_PER_CHUNK = 30_000;
+import { FEEDS_DIR, chunkAndWrite } from "./util.js";
 
 function today(): string {
   const d = new Date();
@@ -45,7 +43,7 @@ function isWithinDays(dateStr: string, days: number): boolean {
   return date >= cutoff;
 }
 
-function hasContent(summary: string | undefined): boolean {
+function hasSummary(summary: string | undefined): boolean {
   if (!summary) return false;
   if (summary === "No content.") return false;
   return true;
@@ -77,7 +75,7 @@ function collectArticles(days: number): Article[] {
       const fields = parseHeaderYaml(raw);
 
       if (!isWithinDays(fields.date, days)) continue;
-      if (!hasContent(fields.summary)) continue;
+      if (!hasSummary(fields.summary)) continue;
 
       articles.push({
         headerPath: join(source, headerFile),
@@ -109,46 +107,10 @@ function formatArticle(article: Article): string {
   ].join("\n");
 }
 
-function wordCount(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
-}
-
-function writeChunks(articles: Article[], outputDir: string) {
-  const chunks: string[] = [];
-  let current = "";
-  let currentWords = 0;
-
-  for (const article of articles) {
-    const formatted = formatArticle(article);
-    const words = wordCount(formatted);
-
-    if (currentWords + words > WORDS_PER_CHUNK && current) {
-      chunks.push(current);
-      current = "";
-      currentWords = 0;
-    }
-
-    current += formatted + "\n";
-    currentWords += words;
-  }
-
-  if (current.trim()) {
-    chunks.push(current);
-  }
-
-  mkdirSync(outputDir, { recursive: true });
-
-  for (let i = 0; i < chunks.length; i++) {
-    const path = join(outputDir, `chunk-${i + 1}.md`);
-    writeFileSync(path, chunks[i]);
-  }
-
-  return chunks.length;
-}
-
 const { days, outputDir } = parseArgs();
 const articles = collectArticles(days);
-const chunkCount = writeChunks(articles, outputDir);
+const entries = articles.map(formatArticle);
+const chunkCount = chunkAndWrite(entries, outputDir);
 
 console.log(outputDir);
 console.log(`Collected ${articles.length} articles from the last ${days} days`);

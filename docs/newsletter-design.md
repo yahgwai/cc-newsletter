@@ -131,9 +131,9 @@ launched with `model: "opus"`.
 ### Step 1: Collect recent headers (script)
 
 ```
-npm run collect                     # defaults to 7 days, today's date
-npx tsx recent-headers.ts 14        # override days
-npx tsx recent-headers.ts --date 2026-02-24   # override date for reruns
+npm run collect                          # defaults to 7 days, today's date
+npx tsx src/recent-headers.ts 14         # override days
+npx tsx src/recent-headers.ts --date 2026-02-24   # override date for reruns
 ```
 
 Outputs chunks to `$RUN/chunk-*.md`. Prints the run directory path as the
@@ -157,13 +157,13 @@ This is a filtering pass — cast a wide net. When in doubt, include it.
 Combine:
 
 ```
-npx tsx combine-lists.ts $RUN/relevant.txt $RUN/relevant-*.txt
+npx tsx src/combine-lists.ts $RUN/relevant.txt $RUN/relevant-*.txt
 ```
 
 ### Step 3: Prioritise for deep reading (LLM)
 
 ```
-npx tsx chunk-headers.ts $RUN/relevant.txt $RUN/prioritise
+npx tsx src/chunk-headers.ts $RUN/relevant.txt $RUN/prioritise
 ```
 
 Launch one subagent per chunk. Each subagent should:
@@ -181,13 +181,13 @@ Err on the side of including something if it looks promising.
 Combine:
 
 ```
-npx tsx combine-lists.ts $RUN/shortlist.txt $RUN/shortlist-*.txt
+npx tsx src/combine-lists.ts $RUN/shortlist.txt $RUN/shortlist-*.txt
 ```
 
 ### Step 4: Deep read and evaluate (LLM)
 
 ```
-npx tsx chunk-articles.ts $RUN/shortlist.txt $RUN/deep-read
+npx tsx src/chunk-articles.ts $RUN/shortlist.txt $RUN/deep-read
 ```
 
 Launch one subagent per chunk. Each subagent should:
@@ -233,7 +233,7 @@ calculates the total word count of all INCLUDE articles, and:
   3. Write one file per group to `$RUN/newsletter-input/` (e.g.
      `group-features.txt`, `group-security.txt`), each containing header paths
      one per line
-  4. Run `npx tsx chunk-articles.ts <group-file> $RUN/newsletter-input/group-N/`
+  4. Run `npx tsx src/chunk-articles.ts <group-file> $RUN/newsletter-input/group-N/`
      for each group file
 
 ### Step 6: Write the newsletter (LLM)
@@ -267,14 +267,14 @@ The main agent then:
    (which synthesizes across all sections), adds Signal/Noise, selects the
    Hot Take quote, places the Snippet if one was found, and ensures the whole
    thing reads as one coherent voice
-4. Writes the result to `./newsletters/YYYY-MM-DD.md`
+4. Writes the result to `./data/newsletters/YYYY-MM-DD.md`
 
 ### Step 7: Editorial pass (LLM)
 
 Launch a subagent that:
 
 1. Reads the newsletter design in `./docs/newsletter-design.md`
-2. Reads the draft in `./newsletters/YYYY-MM-DD.md`
+2. Reads the draft in `./data/newsletters/YYYY-MM-DD.md`
 3. Re-reads with fresh eyes — fix factual errors, tighten prose, cut anything
    that doesn't earn its place, make sure the tone is consistent throughout
-4. Writes the final version back to `./newsletters/YYYY-MM-DD.md`
+4. Writes the final version back to `./data/newsletters/YYYY-MM-DD.md`

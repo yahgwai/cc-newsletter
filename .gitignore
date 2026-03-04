@@ -1,6 +1,5 @@
 node_modules/
-feeds/
-feeds.json
-discovery/
+data/feeds/
+data/feeds.json
+data/discovery/
 .summarise.lock
-discovered-feeds.json

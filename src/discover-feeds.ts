@@ -6,20 +6,20 @@ const parser = new Parser({
   headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
 });
 
-const existingFeeds: string[] = existsSync("feeds.json")
-  ? JSON.parse(readFileSync("feeds.json", "utf-8"))
+const existingFeeds: string[] = existsSync("data/feeds.json")
+  ? JSON.parse(readFileSync("data/feeds.json", "utf-8"))
   : [];
 const existingFeedSet = new Set(existingFeeds);
 
 // Tracks which source URLs we've already probed and what we found (or null)
-const CHECKED_PATH = "discovery/checked.json";
+const CHECKED_PATH = "data/discovery/checked.json";
 const checked: Record<string, string | null> = existsSync(CHECKED_PATH)
   ? JSON.parse(readFileSync(CHECKED_PATH, "utf-8"))
   : {};
 
 const urls = [
   ...new Set(
-    readFileSync("discovery/found.txt", "utf-8")
+    readFileSync("data/discovery/found.txt", "utf-8")
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean)
@@ -256,17 +256,17 @@ const noFeed = results.filter((r) => r.status === "none" || r.status === "error"
 const newFeeds = found.map((r) => r.feed!);
 if (newFeeds.length > 0) {
   const merged = [...existingFeeds, ...newFeeds];
-  writeFileSync("feeds.json", JSON.stringify(merged, null, 2) + "\n");
+  writeFileSync("data/feeds.json", JSON.stringify(merged, null, 2) + "\n");
 }
 
 writeFileSync(CHECKED_PATH, JSON.stringify(checked, null, 2) + "\n");
 
 writeFileSync(
-  "discovery/skipped.txt",
+  "data/discovery/skipped.txt",
   skipped.map((r) => r.url).join("\n") + "\n"
 );
 writeFileSync(
-  "discovery/no-feed.txt",
+  "data/discovery/no-feed.txt",
   noFeed.map((r) => r.url).join("\n") + "\n"
 );
 
@@ -275,5 +275,5 @@ console.log(`New feeds found: ${newFeeds.length}`);
 console.log(`Skipped: ${skipped.length}`);
 console.log(`No feed found: ${noFeed.length}`);
 if (newFeeds.length > 0) {
-  console.log(`\nAppended ${newFeeds.length} new feeds to feeds.json (${existingFeeds.length} → ${existingFeeds.length + newFeeds.length} total)`)
+  console.log(`\nAppended ${newFeeds.length} new feeds to data/feeds.json (${existingFeeds.length} → ${existingFeeds.length + newFeeds.length} total)`)
 }

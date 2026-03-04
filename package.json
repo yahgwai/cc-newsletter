@@ -2,12 +2,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sync": "tsx sync.ts",
-    "summarise": "flock -n .summarise.lock tsx summarise.ts",
+    "sync": "tsx src/sync.ts",
+    "summarise": "flock -n .summarise.lock tsx src/summarise.ts",
     "ingest": "npm run sync && npm run summarise",
-    "collect": "tsx recent-headers.ts",
-    "prepare": "tsx prepare-articles.ts",
-    "pdf": "bash -c 'pandoc newsletters/$0.md -t html --css newsletters/style.css -o newsletters/$0.pdf --pdf-engine=weasyprint'",
+    "collect": "tsx src/recent-headers.ts",
+    "prepare": "tsx src/prepare-articles.ts",
+    "pdf": "bash -c 'pandoc data/newsletters/$0.md -t html --css data/newsletters/style.css -o data/newsletters/$0.pdf --pdf-engine=weasyprint'",
     "test": "vitest run"
   },
   "dependencies": {

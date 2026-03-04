@@ -14,7 +14,7 @@ export interface Article {
   estimatedTokens: number;
 }
 
-interface SummaryResult {
+export interface SummaryResult {
   filename: string;
   summary: string;
   mentions: string[];
@@ -233,7 +233,7 @@ const JSON_SCHEMA = JSON.stringify({
   required: ["articles"],
 });
 
-export function findUnprocessedArticles(feedsDir = "feeds"): Article[] {
+export function findUnprocessedArticles(feedsDir = "data/feeds"): Article[] {
   const articles: Article[] = [];
 
   let sources: string[];
