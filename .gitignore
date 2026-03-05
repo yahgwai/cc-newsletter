@@ -1,5 +1,11 @@
 node_modules/
 data/feeds/
 data/feeds.json
+data/github-releases.json
+data/sitemaps.json
 data/discovery/
+data/runs/
+data/newsletters/*.md
+data/newsletters/*.pdf
 .summarise.lock
+.env
