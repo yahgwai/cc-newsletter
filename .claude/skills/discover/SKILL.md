@@ -1,12 +1,13 @@
 ---
 name: discover
-description: Discover websites and online sources relevant to a subject for RSS feed collection
-argument-hint: [subject]
+description: Discover websites and online sources relevant to the newsletter's subject
 disable-model-invocation: true
-allowed-tools: WebSearch, WebFetch, Bash(npx tsx src/append-found.ts *)
+allowed-tools: WebSearch, WebFetch, Bash(npx tsx src/append-found.ts *), Read
 ---
 
-You are searching for websites and online sources relevant to: $ARGUMENTS
+Read the Overview section of docs/newsletter-design.md to determine the
+newsletter's subject. You are searching for websites and online sources
+relevant to that subject.
 
 ## Process
 

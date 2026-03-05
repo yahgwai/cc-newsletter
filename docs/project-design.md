@@ -2,7 +2,7 @@
 
 ## Purpose
 
-collect-runner is a content collection system for following a subject across the web. You pick a subject — e.g. "development with Claude Code" — and the system discovers sources, syncs their feeds, and processes the content.
+collect-runner is a content collection system for following a subject across the web. You pick a subject — e.g. "development with Claude Code" or "the Rust ecosystem" — and the system discovers sources, syncs their feeds, and processes the content.
 
 The core insight: **collection and consumption are separate problems.** Cast a wide net at collection time; filter and surface what matters later.
 
@@ -14,12 +14,12 @@ The core insight: **collection and consumption are separate problems.** Cast a w
 
 ## Pipeline
 
-1. **Discover** — `/discover {subject}` — agent searches the web, finds relevant sites, appends their URLs to `data/discovery/found.txt`
+1. **Discover** — `/discover` — agent reads the subject from `docs/newsletter-design.md`, searches the web, finds relevant sites, appends their URLs to `data/discovery/found.txt`
 2. **Extract feeds** — `npx tsx src/discover-feeds.ts` — mechanically finds RSS/Atom feeds from discovered URLs
 3. **Sync** — `npm run sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `npm run sync-github-releases` — fetches releases from tracked GitHub repos
 4. **Summarise** — `npm run summarise` — sends articles to Claude Haiku for summarisation
 
-Run `/discover` again or say "find more" to expand coverage iteratively. No structured depth control — just natural language: "find me RSS feeds about development with Claude Code — cast a wide net."
+Run `/discover` again or say "find more" to expand coverage iteratively.
 
 ## Architecture: Agent vs Script
 
@@ -37,7 +37,7 @@ Agents do the searching and judgment. Scripts do the mechanical work.
 - `src/sync-github-releases-lib.ts` / `src/sync-github-releases.ts` — fetches GitHub releases, writes to disk
 - `src/summarise.ts` — batches articles and sends to Claude Haiku for summarisation
 
-The discover prompt runs as a Claude Code skill in the main conversation, not as a subagent. This allows steering ("find more," "focus on GitHub repos") without indirection.
+The discover prompt runs as a skill in the main conversation, not as a subagent. This allows steering ("find more," "focus on GitHub repos") without indirection.
 
 ## Discovery Design
 

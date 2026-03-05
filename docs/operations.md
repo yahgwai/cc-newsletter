@@ -42,7 +42,7 @@ npm run ingest 2>&1 | tee -a data/sync-log/$(date +%Y-%m-%d).log
 
 When you want to expand coverage:
 
-1. Run `/discover` in Claude Code — the agent searches the web and appends
+1. Run `/discover` — the agent searches the web and appends
    URLs to `data/discovery/found.txt`
 2. Extract feeds: `npx tsx src/discover-feeds.ts`
 3. Run `npm run ingest` to pull content from the new feeds
@@ -55,8 +55,7 @@ stable once you have good coverage.
 
 `data/github-releases.json` is a hand-curated list of repos whose release
 notes serve as the source of truth for what shipped. This is not
-automatically populated — review candidates with Claude Code by looking at
-the org's repos and their recent release notes, then decide together which
+automatically populated — review candidates by looking at relevant repos and their recent release notes, then decide together which
 ones have substantive changelogs worth tracking. The bar is high: only repos
 whose releases are an authoritative primary source for changes that affect
 users, not ecosystem tools or SDK version bumps.
@@ -65,8 +64,7 @@ users, not ecosystem tools or SDK version bumps.
 
 `data/sitemaps.json` is a hand-curated list of sitemap URLs for sites that
 don't offer RSS feeds but publish content relevant to the newsletter. This
-covers official Anthropic pages, Claude Code documentation, API docs, and the
-MCP specification. Review candidates with Claude Code — check whether the
+covers official documentation and pages relevant to your newsletter's subject. Review candidates — check whether the
 site has a sitemap (`/sitemap.xml` or via `robots.txt`), whether the content
 is substantive enough to track, and whether RSS isn't already covering it.
 Prefer RSS when available; sitemaps are the fallback for sites that don't
@@ -88,7 +86,7 @@ npm run ingest
 # 2. Collect recent headers into chunks
 npm run recent-headers
 
-# 3. Steps 2-7 are LLM steps run by Claude Code
+# 3. Steps 2-7 are LLM steps run by Claude
 #    Tell Claude: "Run the newsletter pipeline following docs/newsletter-design.md"
 
 # 4. After the newsletter is written, generate the PDF
@@ -97,7 +95,7 @@ npm run pdf -- YYYY-MM-DD
 
 Steps 2-7 of the pipeline (filtering, prioritising, deep reading, writing,
 editorial pass) are described in detail in `docs/newsletter-design.md` and
-are run by Claude Code using subagents.
+are run by Claude using subagents.
 
 ## File layout
 

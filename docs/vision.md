@@ -2,7 +2,7 @@
 
 ## The goal
 
-Build a system that can **become and stay an expert on Claude Code** by
+Build a system that can **become and stay an expert on a subject (this document uses Claude Code as a running example)** by
 continuously monitoring sources, synthesizing what it finds into a living
 knowledge base, and answering questions from that knowledge — like a domain
 expert who's been keeping up with the field, not one who has to google it
