@@ -30,6 +30,31 @@ What shipped. CLI updates, model changes, new capabilities, config options.
 Factual, concise. Each item states what changed and what it means practically.
 Bullet points or short paragraphs.
 
+#### Source of truth rule
+
+The GitHub releases feed (`data/feeds/anthropics--claude-code/`) is the
+authoritative source for what shipped. A feature belongs in New Features
+only if it appears in a release published within the newsletter's date
+range (or the preceding 14 days, to catch features that span issue
+boundaries).
+
+When a feature is new, include a brief explanation of how it works.
+Blog posts or community sources that explain the feature well can be
+cited here — this is the one time where "here's what it does" coverage
+adds value.
+
+After that initial window, a source mentioning the feature only belongs
+in the newsletter if it adds something beyond description: a novel use
+case, a non-obvious interaction, a limitation discovered in practice, a
+workflow that changes how you'd use it. "Here's how feature X works"
+written three weeks after release is not newsletter material. "I tried
+feature X for Y and discovered Z" might be.
+
+If a source describes a Claude Code capability but no matching release
+exists in the feed, it belongs in Techniques & Workflows (if it's about
+usage) or another appropriate section — not New Features. We don't
+report features as new unless we can confirm they shipped.
+
 ### 3. Security & Bugs
 
 What broke, what got patched, what to watch out for. Vulnerabilities, known
@@ -120,7 +145,7 @@ a section with one strong item is better than three weak ones.
 
 ## Production Pipeline
 
-All paths below use `$RUN` to mean `/tmp/newsletter-YYYY-MM-DD/` — the
+All paths below use `$RUN` to mean `data/runs/YYYY-MM-DD/` — the
 date-stamped run directory created by Step 1. Each run is isolated so
 re-running the pipeline doesn't clobber previous weeks.
 
@@ -131,7 +156,7 @@ launched with `model: "opus"`.
 ### Step 1: Collect recent headers (script)
 
 ```
-npm run collect                          # defaults to 7 days, today's date
+npm run recent-headers                   # defaults to 7 days, today's date
 npx tsx src/recent-headers.ts 14         # override days
 npx tsx src/recent-headers.ts --date 2026-02-24   # override date for reruns
 ```
@@ -149,15 +174,27 @@ Launch one subagent per chunk file. Each subagent should:
    any section of the newsletter — not just Claude Code content, but also
    anything that might fit in The Wider World, Security & Bugs, Techniques, or
    community discussion
-4. Write a plain list of the `Header:` paths for all relevant entries, one per
-   line, no commentary, to `$RUN/relevant-N.txt` (matching its chunk number)
+4. Write a decision for every header using this format, separated by `---`:
+
+   ```
+   ## Header: path/to/header.yaml
+   **Decision:** INCLUDE
+   **Reason:** Covers a new Claude Code CLI feature relevant to New Features section
+   ---
+   ## Header: path/to/other.yaml
+   **Decision:** EXCLUDE
+   **Reason:** Generic AI industry news, not specific enough for any section
+   ---
+   ```
+
+   Write the output to `$RUN/filter-N.md` (matching its chunk number).
 
 This is a filtering pass — cast a wide net. When in doubt, include it.
 
-Combine:
+Extract the INCLUDE paths:
 
 ```
-npx tsx src/combine-lists.ts $RUN/relevant.txt $RUN/relevant-*.txt
+npx tsx src/extract-includes.ts $RUN/relevant.txt $RUN/filter-*.md
 ```
 
 ### Step 3: Prioritise for deep reading (LLM)
@@ -172,16 +209,27 @@ Launch one subagent per chunk. Each subagent should:
 2. Read the newsletter design in `./docs/newsletter-design.md`
 3. Select the headers that are most worth reading in full — based on how
    interesting the topic is and how credible or high-quality the source appears
-4. Write one header path per line to `$RUN/shortlist-N.txt` (matching its
-   chunk number). Annotations after a ` | ` separator are allowed but
-   optional — `chunk-articles.ts` strips them automatically
+4. Write a decision for every header using this format, separated by `---`:
+
+   ```
+   ## Header: path/to/header.yaml
+   **Decision:** INCLUDE
+   **Reason:** High-quality source with concrete workflow details worth deep reading
+   ---
+   ## Header: path/to/other.yaml
+   **Decision:** EXCLUDE
+   **Reason:** Superficial listicle, unlikely to add substance on deeper read
+   ---
+   ```
+
+   Write the output to `$RUN/prioritise-N.md` (matching its chunk number).
 
 Err on the side of including something if it looks promising.
 
-Combine:
+Extract the INCLUDE paths:
 
 ```
-npx tsx src/combine-lists.ts $RUN/shortlist.txt $RUN/shortlist-*.txt
+npx tsx src/extract-includes.ts $RUN/shortlist.txt $RUN/prioritise-*.md
 ```
 
 ### Step 4: Deep read and evaluate (LLM)
@@ -274,7 +322,10 @@ The main agent then:
 Launch a subagent that:
 
 1. Reads the newsletter design in `./docs/newsletter-design.md`
-2. Reads the draft in `./data/newsletters/YYYY-MM-DD.md`
-3. Re-reads with fresh eyes — fix factual errors, tighten prose, cut anything
-   that doesn't earn its place, make sure the tone is consistent throughout
-4. Writes the final version back to `./data/newsletters/YYYY-MM-DD.md`
+2. Copies the draft from `./data/newsletters/YYYY-MM-DD.md` to
+   `$RUN/draft.md` (preserves the pre-edit version)
+3. Reads the draft and re-reads with fresh eyes — fix factual errors, tighten
+   prose, cut anything that doesn't earn its place, make sure the tone is
+   consistent throughout
+4. Writes a summary of editorial changes to `$RUN/editorial-changes.md`
+5. Writes the final version back to `./data/newsletters/YYYY-MM-DD.md`

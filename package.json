@@ -2,15 +2,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sync": "tsx src/sync.ts",
+    "sync-rss": "tsx src/sync-rss.ts",
+    "sync-github-releases": "tsx src/sync-github-releases.ts",
+    "sync-sitemaps": "tsx src/sync-sitemap.ts",
     "summarise": "flock -n .summarise.lock tsx src/summarise.ts",
-    "ingest": "npm run sync && npm run summarise",
-    "collect": "tsx src/recent-headers.ts",
+    "ingest": "npm run sync-rss && npm run sync-github-releases && npm run sync-sitemaps && npm run summarise",
+    "recent-headers": "tsx src/recent-headers.ts",
     "prepare": "tsx src/prepare-articles.ts",
     "pdf": "bash -c 'pandoc data/newsletters/$0.md -t html --css data/newsletters/style.css -o data/newsletters/$0.pdf --pdf-engine=weasyprint'",
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "rss-parser": "^3.13.0",
     "tsx": "^4.19.0",
     "turndown": "^7.2.0"

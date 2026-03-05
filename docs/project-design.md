@@ -16,7 +16,7 @@ The core insight: **collection and consumption are separate problems.** Cast a w
 
 1. **Discover** — `/discover {subject}` — agent searches the web, finds relevant sites, appends their URLs to `data/discovery/found.txt`
 2. **Extract feeds** — `npx tsx src/discover-feeds.ts` — mechanically finds RSS/Atom feeds from discovered URLs
-3. **Sync** — `npm run sync` — fetches all feeds, converts entries to Markdown files
+3. **Sync** — `npm run sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `npm run sync-github-releases` — fetches releases from tracked GitHub repos
 4. **Summarise** — `npm run summarise` — sends articles to Claude Haiku for summarisation
 
 Run `/discover` again or say "find more" to expand coverage iteratively. No structured depth control — just natural language: "find me RSS feeds about development with Claude Code — cast a wide net."
@@ -33,7 +33,8 @@ Agents do the searching and judgment. Scripts do the mechanical work.
 **What scripts do:**
 - `src/append-found.ts` — deduplicates and appends URLs to `found.txt`
 - `src/discover-feeds.ts` — mechanical feed extraction (HTML autodiscovery, known platform patterns, common path probing)
-- `src/sync-lib.ts` / `src/sync.ts` — fetches feeds, converts to Markdown, writes to disk
+- `src/sync-lib.ts` / `src/sync-rss.ts` — fetches RSS feeds, converts to Markdown, writes to disk
+- `src/sync-github-releases-lib.ts` / `src/sync-github-releases.ts` — fetches GitHub releases, writes to disk
 - `src/summarise.ts` — batches articles and sends to Claude Haiku for summarisation
 
 The discover prompt runs as a Claude Code skill in the main conversation, not as a subagent. This allows steering ("find more," "focus on GitHub repos") without indirection.

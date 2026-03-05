@@ -89,7 +89,7 @@ describe("findUnprocessedArticles", () => {
     writeFileSync(join(sourceDir, "post-1.md"), "a".repeat(400));
 
     const articles = findUnprocessedArticles(tmpDir);
-    expect(articles[0].estimatedTokens).toBe(100);
+    expect(articles[0].estimatedTokens).toBe(200);
   });
 
   it("returns empty array for non-existent directory", () => {

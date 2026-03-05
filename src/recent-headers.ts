@@ -21,7 +21,7 @@ function parseArgs(): { days: number; outputDir: string } {
     }
   }
 
-  return { days, outputDir: `/tmp/newsletter-${date}` };
+  return { days, outputDir: `data/runs/${date}` };
 }
 
 function parseHeaderYaml(content: string) {

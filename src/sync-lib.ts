@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import Parser from "rss-parser";
 import TurndownService from "turndown";
+import { countTokens } from "./count-tokens.js";
 
 const USER_AGENT =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -39,17 +40,21 @@ export function formatHeader(item: {
   title?: string;
   link?: string;
   pubDate?: string;
+  tokens?: number;
 }): string {
   const date = item.pubDate
     ? new Date(item.pubDate).toISOString()
     : "";
 
-  return [
+  const lines = [
     `title: ${JSON.stringify(item.title ?? "Untitled")}`,
     `link: ${JSON.stringify(item.link ?? "")}`,
     `date: ${JSON.stringify(date)}`,
-    "",
-  ].join("\n");
+  ];
+  if (item.tokens != null) lines.push(`tokens: ${item.tokens}`);
+  lines.push("");
+
+  return lines.join("\n");
 }
 
 export function formatEntry(item: {
@@ -82,8 +87,10 @@ export async function syncFeed(url: string, baseDir = "data/feeds"): Promise<str
 
     if (existsSync(path)) continue;
 
-    writeFileSync(headerPath, formatHeader(item));
-    writeFileSync(path, formatEntry(item));
+    const content = formatEntry(item);
+    const tokens = await countTokens(content) ?? undefined;
+    writeFileSync(headerPath, formatHeader({ ...item, tokens }));
+    writeFileSync(path, content);
     console.log(`wrote ${path}`);
     written.push(path);
   }

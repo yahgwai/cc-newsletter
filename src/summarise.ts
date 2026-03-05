@@ -276,12 +276,16 @@ export function findUnprocessedArticles(feedsDir = "data/feeds"): Article[] {
       const cleaned = content.replace(/^- \*\*Link:\*\*.*\n?/m, "").replace(/^- \*\*Date:\*\*.*\n?/m, "");
 
       const slug = `${source}/${baseName}`;
+      const tokensMatch = headerContent.match(/^tokens:\s*(\d+)/m);
+      const estimatedTokens = tokensMatch
+        ? parseInt(tokensMatch[1], 10)
+        : Math.ceil(cleaned.length / 2);
       articles.push({
         headerPath,
         contentPath,
         slug,
         content: cleaned,
-        estimatedTokens: Math.ceil(cleaned.length / 4),
+        estimatedTokens,
       });
     }
   }
@@ -394,7 +398,8 @@ async function callClaude(userPrompt: string): Promise<SummaryResult[]> {
 
     proc.on("close", (code) => {
       if (code !== 0) {
-        reject(new Error(`claude exited with code ${code}: ${stderr}`));
+        const detail = stderr || stdout.slice(0, 1000) || "(no output)";
+        reject(new Error(`claude exited with code ${code}: ${detail}`));
         return;
       }
 
@@ -471,13 +476,18 @@ async function main() {
   const throttle = makeThrottle();
 
   async function processBatch(batch: Article[], batchNum: number) {
-    const estTokens = Math.round(
-      batch.reduce((s, a) => s + a.estimatedTokens, 0) / 1000
-    );
+    const totalTokens = batch.reduce((s, a) => s + a.estimatedTokens, 0);
+    const estTokens = Math.round(totalTokens / 1000);
+    if (totalTokens > 160_000) {
+      console.log(`Batch ${batchNum}/${batches.length}: skipped, too large for haiku (est. ${estTokens}K tokens): ${batch.map(a => a.slug).join(", ")}`);
+      totalSkipped += batch.length;
+      return;
+    }
     await throttle();
     const start = performance.now();
+    const prompt = buildUserPrompt(batch);
     try {
-      const results = await callClaude(buildUserPrompt(batch));
+      const results = await callClaude(prompt);
       const elapsed = ((performance.now() - start) / 1000).toFixed(1);
       const { written, skipped } = writeResults(batch, results);
       totalWritten += written;
