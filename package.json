@@ -10,6 +10,7 @@
     "recent-headers": "tsx src/recent-headers.ts",
     "prepare": "tsx src/prepare-articles.ts",
     "pdf": "bash -c 'pandoc data/newsletters/$0.md -t html --css data/newsletters/style.css -o data/newsletters/$0.pdf --pdf-engine=weasyprint'",
+    "research": "tsx src/research.ts",
     "test": "vitest run"
   },
   "dependencies": {

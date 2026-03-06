@@ -5,6 +5,7 @@ data/github-releases.json
 data/sitemaps.json
 data/discovery/
 data/runs/
+data/research/
 data/newsletters/*.md
 data/newsletters/*.pdf
 .summarise.lock
