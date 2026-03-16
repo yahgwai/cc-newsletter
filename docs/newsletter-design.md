@@ -1,10 +1,20 @@
-# The Claude Code Review
+# Apple Services
+
+## Title Format
+
+```
+# Apple Services
+
+*Week of March 6, 2026*
+```
 
 ## Overview
 
-An intelligence briefing on Claude Code development, synthesized from a wide
-range of blogs and release notes of varying quality. Written for an experienced
-developer's personal consumption. Output is markdown.
+A weekly intelligence briefing on Apple's services business — TV+, sports,
+content deals, services revenue, and product strategy — synthesized from
+news sites, trade publications, and analyst commentary. Written for an
+engineering program manager inside Apple Services who wants to stay informed
+without reading dozens of sources. Output is markdown.
 
 ## Sections
 
@@ -14,9 +24,11 @@ back to its source.
 ### 1. The Briefing
 
 No section heading — the newsletter opens straight into 3-4 paragraphs of
-narrative prose. The week at a glance — biggest stories across all three
-categories. Connects dots: why does this release matter in context of that
-technique people discovered? Assumes the reader already knows the basics.
+narrative prose. The week at a glance — biggest stories across services
+revenue, TV+, sports, and product strategy. Connects dots: why does this
+deal matter in context of that earnings signal? Assumes the reader knows
+the org, the players, and the competitive landscape.
+
 Ends with:
 
 - **Signal:** One thing that deserves more attention than it got.
@@ -24,106 +36,93 @@ Ends with:
 
 These may or may not repeat something mentioned earlier in the briefing.
 
-### 2. New Features
+### 2. Services & Financials
 
-What shipped. CLI updates, model changes, new capabilities, config options.
-Factual, concise. Each item states what changed and what it means practically.
-Bullet points or short paragraphs.
+How Apple's services business is performing. Quarterly earnings get deep
+treatment — revenue numbers, growth rates, commentary from the call.
+Between quarters: analyst takes, market positioning relative to competitors,
+pricing changes to subscriptions or bundles, anything that moves the
+services revenue narrative.
 
-#### Source of truth rule
+Include specific numbers when available. "Services grew 12% YoY to $25B"
+is useful. "Services continued to grow" is not.
 
-The GitHub releases feed (`data/feeds/anthropics--claude-code/`) is the
-authoritative source for what shipped. A feature belongs in New Features
-only if it appears in a release published within the newsletter's date
-range (or the preceding 14 days, to catch features that span issue
-boundaries).
+### 3. TV+ & Originals
 
-When a feature is new, include a brief explanation of how it works.
-Blog posts or community sources that explain the feature well can be
-cited here — this is the one time where "here's what it does" coverage
-adds value.
+Content strategy in action. Show renewals, cancellations, new series
+orders, film acquisitions, talent signings, production deals. Awards
+season coverage when relevant. Viewership signals — Apple rarely gives
+numbers, so note when third-party estimates or indirect signals emerge.
 
-After that initial window, a source mentioning the feature only belongs
-in the newsletter if it adds something beyond description: a novel use
-case, a non-obvious interaction, a limitation discovered in practice, a
-workflow that changes how you'd use it. "Here's how feature X works"
-written three weeks after release is not newsletter material. "I tried
-feature X for Y and discovered Z" might be.
+Frame content moves in competitive context when it matters: what Netflix,
+Disney+, Amazon, or Max are doing that makes an Apple move more or less
+significant.
 
-If a source describes a Claude Code capability but no matching release
-exists in the feed, it belongs in Techniques & Workflows (if it's about
-usage) or another appropriate section — not New Features. We don't
-report features as new unless we can confirm they shipped.
+### 4. Sports
 
-### 3. Security & Bugs
+MLS Season Pass, any new sports rights deals or negotiations, partnerships
+with leagues or broadcasters. Features built for sports viewing (multiview,
+stats overlays, spatial video for sports). The intersection of live sports
+and streaming technology.
 
-What broke, what got patched, what to watch out for. Vulnerabilities, known
-issues, workarounds. Usually bullet points, but can go deeper in prose when
-there's an interesting exploit, bug, or security technique worth explaining
-properly.
+Also covers sports rights deals going to competitors when they affect
+Apple's positioning — e.g., if Amazon or ESPN secures something Apple was
+reportedly pursuing.
 
-### 4. Article of the Week
+### 5. Product & Strategy
 
-One article, properly summarised in 2-3 paragraphs. Why it was written, what
-it says, and why it's worth reading. This is the "if you read one thing" pick.
-Always links to the original.
+Major Apple announcements and launches. New hardware that affects the
+services ecosystem (Apple TV hardware, Vision Pro and spatial video,
+iPhone features that drive services adoption). Pricing changes, bundling
+strategy (Apple One), international expansion.
 
-### 5. Techniques & Workflows
+Press releases and official announcements land here — even straightforward
+news deserves a line or two so you're never caught off guard. Depth is
+proportional to significance.
 
-2-3 items describing techniques and workflows people are using. CLAUDE.md
-patterns, task decomposition strategies, plan mode usage, prompting approaches,
-hook configurations. Short paragraphs per item.
+### 6. Developer & Platform
 
-### 6. What Are They Talking About & What Are They Building?
-
-Starts with ecosystem: new MCP servers, interesting integrations, SDK projects,
-tools built on top of Claude. Ends with community chatter: recurring
-complaints, debates, interesting conversations from GitHub issues, forums,
-blogs. What's the vibe?
+Light coverage. Major SDK changes, App Store policy shifts, API updates,
+regulatory-driven changes to the platform (EU DMA compliance, alternative
+payment systems). Only what a services EPM should be aware of — not
+deep developer tooling coverage.
 
 ### 7. The Wider World
 
-Things that aren't Claude Code but matter to someone who lives in it. One prose
-piece going deeper on a single adjacent topic, followed by a few bullet points
-on other adjacent things worth knowing about.
-
-### 8. Hot Take
-
-Closes the newsletter. A direct quote from something published that week.
-Cited and linked. No explanation — just the quote and its source.
-
-## The Snippet
-
-We aim to include one code snippet, prompt pattern, config example, or tool
-invocation somewhere in the newsletter each week. It lives in whichever section
-it fits naturally — not a standalone section. Not forced if nothing warrants it
-that week.
+What competitors and adjacent players are doing that matters for context.
+Netflix earnings or strategy shifts, Disney+ restructuring, sports
+streaming rights going elsewhere, regulatory moves (EU, DOJ antitrust).
+One or two items that help frame Apple's position.
 
 ## Citations
 
-Every claim, every reference, every quote links back to its source. No orphaned
-assertions. Use inline markdown links.
+Every claim, every reference, every quote links back to its source. No
+orphaned assertions. Use inline markdown links.
 
 ## Tone
 
-Straight-talking and matter-of-fact. Says what happened, says why it matters,
-moves on. Doesn't dress things up or reach for dramatic framing. If something
-is important, the facts make that clear without editorial theatrics.
+Straight-talking and informed. Reports what happened, explains why it
+matters to someone inside the services org, moves on. Doesn't rehash basic
+context — assumes the reader knows who Eddy Cue is, what MLS Season Pass
+does, and how Apple's services revenue is structured.
 
-Has opinions but holds them lightly. Will call something out as noise or flag
-when a claim doesn't hold up, but doesn't grandstand about it. More "this
-doesn't hold up because X" than a clever put-down.
+Major Apple announcements get covered even when they're straightforward — a
+new product launch or press release deserves a line or two so you're never
+caught off guard. But the depth is proportional to significance: a show
+renewal is a bullet point, a landmark sports rights deal gets real space.
+
+Has a point of view but stays grounded. Will note when an analyst take
+doesn't hold up or when a deal signals something bigger, but doesn't
+editorialize for the sake of it. More "this matters because X" than hot
+takes.
 
 Respects the reader's time. Assumes you're busy and smart. Doesn't
 over-explain, doesn't sell you on why you should care. If it's in the
 newsletter, it's there because it matters — that's implicit.
 
-Warm but not chatty. Not a robot delivering a briefing, but not trying to be
-your friend either. A colleague who's good at their job and doesn't waste
-words. Occasionally dry, never forced.
-
-Not corporate announcement style. Not breathless tech blog excitement. Not
-"we're thrilled to announce." Not hedging every opinion with "it depends."
+Professional but not corporate. Not a press release summary, not a fan blog.
+A sharp colleague who reads everything so you don't have to. Occasionally
+dry, never forced.
 
 ## Word Budget
 
@@ -142,190 +141,3 @@ When deciding what to cut, drop the least impactful items from within each
 section rather than dropping entire sections. Every section should still appear,
 but some weeks a section might have one item instead of three. That's fine —
 a section with one strong item is better than three weak ones.
-
-## Production Pipeline
-
-All paths below use `$RUN` to mean `data/runs/YYYY-MM-DD/` — the
-date-stamped run directory created by Step 1. Each run is isolated so
-re-running the pipeline doesn't clobber previous weeks.
-
-Steps marked **(script)** are deterministic and run as CLI commands.
-Steps marked **(LLM)** require editorial judgment. All subagents should be
-launched with `model: "opus"`.
-
-### Step 1: Collect recent headers (script)
-
-```
-npm run recent-headers                   # defaults to 7 days, today's date
-npx tsx src/recent-headers.ts 14         # override days
-npx tsx src/recent-headers.ts --date 2026-02-24   # override date for reruns
-```
-
-Outputs chunks to `$RUN/chunk-*.md`. Prints the run directory path as the
-first line of stdout so downstream steps can capture it.
-
-### Step 2: Filter for relevance (LLM)
-
-Launch one subagent per chunk file. Each subagent should:
-
-1. Read its assigned chunk from `$RUN/chunk-N.md`
-2. Read the newsletter design in `./docs/newsletter-design.md`
-3. Review every header in the chunk and decide whether it could be relevant to
-   any section of the newsletter — not just Claude Code content, but also
-   anything that might fit in The Wider World, Security & Bugs, Techniques, or
-   community discussion
-4. Write a decision for every header using this format, separated by `---`:
-
-   ```
-   ## Header: path/to/header.yaml
-   **Decision:** INCLUDE
-   **Reason:** Covers a new Claude Code CLI feature relevant to New Features section
-   ---
-   ## Header: path/to/other.yaml
-   **Decision:** EXCLUDE
-   **Reason:** Generic AI industry news, not specific enough for any section
-   ---
-   ```
-
-   Write the output to `$RUN/filter-N.md` (matching its chunk number).
-
-This is a filtering pass — cast a wide net. When in doubt, include it.
-
-Extract the INCLUDE paths:
-
-```
-npx tsx src/extract-includes.ts $RUN/relevant.txt $RUN/filter-*.md
-```
-
-### Step 3: Prioritise for deep reading (LLM)
-
-```
-npx tsx src/chunk-headers.ts $RUN/relevant.txt $RUN/prioritise
-```
-
-Launch one subagent per chunk. Each subagent should:
-
-1. Read its assigned chunk from `$RUN/prioritise/chunk-N.md`
-2. Read the newsletter design in `./docs/newsletter-design.md`
-3. Select the headers that are most worth reading in full — based on how
-   interesting the topic is and how credible or high-quality the source appears
-4. Write a decision for every header using this format, separated by `---`:
-
-   ```
-   ## Header: path/to/header.yaml
-   **Decision:** INCLUDE
-   **Reason:** High-quality source with concrete workflow details worth deep reading
-   ---
-   ## Header: path/to/other.yaml
-   **Decision:** EXCLUDE
-   **Reason:** Superficial listicle, unlikely to add substance on deeper read
-   ---
-   ```
-
-   Write the output to `$RUN/prioritise-N.md` (matching its chunk number).
-
-Err on the side of including something if it looks promising.
-
-Extract the INCLUDE paths:
-
-```
-npx tsx src/extract-includes.ts $RUN/shortlist.txt $RUN/prioritise-*.md
-```
-
-### Step 4: Deep read and evaluate (LLM)
-
-```
-npx tsx src/chunk-articles.ts $RUN/shortlist.txt $RUN/deep-read
-```
-
-Launch one subagent per chunk. Each subagent should:
-
-1. Read its assigned chunk from `$RUN/deep-read/chunk-N.md`
-2. Read the newsletter design in `./docs/newsletter-design.md`
-3. Read every article in full and for each one write an evaluation using this
-   format, separated by `---`:
-
-   ```
-   ## Header: path/to/header.yaml
-   **Decision:** INCLUDE or EXCLUDE
-   **Section:** Section Name
-   **Summary:** 2-3 sentences on the substance — what you actually learned
-   from reading it, not just the header summary
-   ---
-   ```
-
-   For articles that should NOT be included, still list them with a one-line
-   summary explaining the exclusion so the decision is auditable.
-
-Each subagent writes its evaluations to `$RUN/evaluations-N.md` (matching its
-chunk number). The main agent concatenates them into `$RUN/evaluations.md`.
-
-### Step 5: Prepare article content (script)
-
-```
-npm run prepare -- $RUN/evaluations.md $RUN/newsletter-input
-```
-
-This writes `$RUN/newsletter-input/includes.txt` (one header path per line),
-calculates the total word count of all INCLUDE articles, and:
-
-- **Under 50k words:** automatically runs `chunk-articles.ts` to write chunks
-  to `$RUN/newsletter-input/single/`. Proceed to Step 6.
-- **Over 50k words:** prints a message that affinity grouping is needed.
-  This is an LLM step:
-  1. Read `$RUN/evaluations.md` and look at the section assignments for each
-     INCLUDE article
-  2. Group articles that share the same or overlapping sections — e.g. all the
-     New Features articles together, Security & Bugs together, etc. Articles
-     assigned to multiple sections go with whichever group they fit best
-  3. Write one file per group to `$RUN/newsletter-input/` (e.g.
-     `group-features.txt`, `group-security.txt`), each containing header paths
-     one per line
-  4. Run `npx tsx src/chunk-articles.ts <group-file> $RUN/newsletter-input/group-N/`
-     for each group file
-
-### Step 6: Write the newsletter (LLM)
-
-Launch one subagent per chunk in `$RUN/newsletter-input/single/` (or the
-group directories if affinity grouping was used).
-
-**If there is only one chunk** (everything fits), the subagent should:
-
-1. Read the newsletter design in `./docs/newsletter-design.md`
-2. Read `$RUN/evaluations.md` for section assignments and editorial notes
-3. Read the full article chunk
-4. Write the complete newsletter following the design doc — all sections, in
-   order, with citations, in the correct tone
-
-**If there are multiple chunks**, each subagent should:
-
-1. Read the newsletter design in `./docs/newsletter-design.md`
-2. Read `$RUN/evaluations.md` in full (so it has the big picture of the whole
-   week, not just its own articles)
-3. Read its assigned chunk of articles
-4. Write only the newsletter sections that its articles map to, following the
-   design doc format, tone, and citation requirements
-
-The main agent then:
-
-1. Collects all section drafts from the subagents
-2. Launches a final subagent that reads the newsletter design, the full
-   evaluations, and all section drafts
-3. This final subagent assembles the complete newsletter: writes The Briefing
-   (which synthesizes across all sections), adds Signal/Noise, selects the
-   Hot Take quote, places the Snippet if one was found, and ensures the whole
-   thing reads as one coherent voice
-4. Writes the result to `./data/newsletters/YYYY-MM-DD.md`
-
-### Step 7: Editorial pass (LLM)
-
-Launch a subagent that:
-
-1. Reads the newsletter design in `./docs/newsletter-design.md`
-2. Copies the draft from `./data/newsletters/YYYY-MM-DD.md` to
-   `$RUN/draft.md` (preserves the pre-edit version)
-3. Reads the draft and re-reads with fresh eyes — fix factual errors, tighten
-   prose, cut anything that doesn't earn its place, make sure the tone is
-   consistent throughout
-4. Writes a summary of editorial changes to `$RUN/editorial-changes.md`
-5. Writes the final version back to `./data/newsletters/YYYY-MM-DD.md`

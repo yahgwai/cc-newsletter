@@ -2,7 +2,7 @@
 
 ## Purpose
 
-collect-runner is a content collection system for following a subject across the web. You pick a subject — e.g. "development with Claude Code" or "the Rust ecosystem" — and the system discovers sources, syncs their feeds, and processes the content.
+collect-runner is a content collection CLI tool for following a subject across the web. You pick a subject — e.g. "development with Claude Code" or "the Rust ecosystem" — and the system discovers sources, syncs their feeds, and processes the content.
 
 The core insight: **collection and consumption are separate problems.** Cast a wide net at collection time; filter and surface what matters later.
 
@@ -14,10 +14,10 @@ The core insight: **collection and consumption are separate problems.** Cast a w
 
 ## Pipeline
 
-1. **Discover** — `/discover` — agent reads the subject from `docs/newsletter-design.md`, searches the web, finds relevant sites, appends their URLs to `data/discovery/found.txt`
-2. **Extract feeds** — `npx tsx src/discover-feeds.ts` — mechanically finds RSS/Atom feeds from discovered URLs
-3. **Sync** — `npm run sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `npm run sync-github-releases` — fetches releases from tracked GitHub repos
-4. **Summarise** — `npm run summarise` — sends articles to Claude Haiku for summarisation
+1. **Discover** — `/discover` — agent reads the subject from `newsletter-design.md`, searches the web, finds relevant sites, appends their URLs to `discovery/found.txt`
+2. **Extract feeds** — `collect discover-feeds` — mechanically finds RSS/Atom feeds from discovered URLs
+3. **Sync** — `collect sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `collect sync-github-releases` — fetches releases from tracked GitHub repos
+4. **Summarise** — `collect summarise` — sends articles to Claude Haiku for summarisation
 
 Run `/discover` again or say "find more" to expand coverage iteratively.
 
@@ -56,7 +56,7 @@ The agent implicitly prioritises core sources first, and moves into the long tai
 
 ### One working file
 
-`data/discovery/found.txt` — one URL per line. No categories, no todo/done split. The agent can infer what's been searched from what's been found. Redundant searches are cheap.
+`discovery/found.txt` — one URL per line. No categories, no todo/done split. The agent can infer what's been searched from what's been found. Redundant searches are cheap.
 
 URL deduplication is done by prompt instruction ("store the most canonical URL") plus exact dedup in `src/append-found.ts`. No mechanical URL normalisation.
 
@@ -78,13 +78,13 @@ Three strategies tried in order for each URL:
 
 Sites that won't have standard RSS are skipped (GitHub, Discord, Twitter/X, YouTube, Spotify, npm, arxiv, Reddit, etc.).
 
-Results are cached in `data/discovery/checked.json`. URLs where no feed was found go to `data/discovery/no-feed.txt`, skipped URLs to `data/discovery/skipped.txt`.
+Results are cached in `discovery/checked.json`. URLs where no feed was found go to `discovery/no-feed.txt`, skipped URLs to `discovery/skipped.txt`.
 
 ## Feed Metadata (intentionally absent)
 
 A structured schema was proposed (`tier`, `type`, `scope`, `name` per feed) and rejected. It was designing for a consumption system that doesn't exist yet.
 
-`data/feeds.json` is a flat array of URL strings. If metadata is needed later, it's cheap to add — re-run discovery or enrich existing entries.
+`feeds.json` is a flat array of URL strings. If metadata is needed later, it's cheap to add — re-run discovery or enrich existing entries.
 
 ## Downstream Processing
 

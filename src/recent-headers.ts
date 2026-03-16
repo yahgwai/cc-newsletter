@@ -7,21 +7,20 @@ function today(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function parseArgs(): { days: number; outputDir: string } {
-  const args = process.argv.slice(2);
+function parseCliArgs(argv: string[]): { days: number; outputDir: string } {
   let days = 7;
   let date = today();
 
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--date" && args[i + 1]) {
-      date = args[i + 1];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--date" && argv[i + 1]) {
+      date = argv[i + 1];
       i++;
-    } else if (!args[i].startsWith("--")) {
-      days = parseInt(args[i], 10);
+    } else if (!argv[i].startsWith("--")) {
+      days = parseInt(argv[i], 10);
     }
   }
 
-  return { days, outputDir: `data/runs/${date}` };
+  return { days, outputDir: `runs/${date}` };
 }
 
 function parseHeaderYaml(content: string) {
@@ -107,11 +106,13 @@ function formatArticle(article: Article): string {
   ].join("\n");
 }
 
-const { days, outputDir } = parseArgs();
-const articles = collectArticles(days);
-const entries = articles.map(formatArticle);
-const chunkCount = chunkAndWrite(entries, outputDir);
+export function recentHeaders(args: string[]) {
+  const { days, outputDir } = parseCliArgs(args);
+  const articles = collectArticles(days);
+  const entries = articles.map(formatArticle);
+  const chunkCount = chunkAndWrite(entries, outputDir);
 
-console.log(outputDir);
-console.log(`Collected ${articles.length} articles from the last ${days} days`);
-console.log(`Written to ${chunkCount} chunks in ${outputDir}/`);
+  console.log(outputDir);
+  console.log(`Collected ${articles.length} articles from the last ${days} days`);
+  console.log(`Written to ${chunkCount} chunks in ${outputDir}/`);
+}

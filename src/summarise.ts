@@ -233,7 +233,7 @@ const JSON_SCHEMA = JSON.stringify({
   required: ["articles"],
 });
 
-export function findUnprocessedArticles(feedsDir = "data/feeds"): Article[] {
+export function findUnprocessedArticles(feedsDir = "feeds"): Article[] {
   const articles: Article[] = [];
 
   let sources: string[];
@@ -369,6 +369,18 @@ export function writeResults(
   return { written, skipped };
 }
 
+const CLAUDE_TIMEOUT_MS = 300_000;
+
+// claude -p --output-format json puts errors on stderr as JSON with
+// {is_error: true, result: "message"}. Extract the human-readable part.
+function extractClaudeError(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.result) return parsed.result;
+  } catch {}
+  return raw.slice(0, 500);
+}
+
 async function callClaude(userPrompt: string): Promise<SummaryResult[]> {
   return new Promise((resolve, reject) => {
     const env = { ...process.env };
@@ -379,8 +391,14 @@ async function callClaude(userPrompt: string): Promise<SummaryResult[]> {
       "--model", "haiku",
       "--output-format", "json",
       "--json-schema", JSON_SCHEMA,
+      "--allowedTools", "",
       "--system-prompt", SYSTEM_PROMPT,
     ], { stdio: ["pipe", "pipe", "pipe"], env });
+
+    const timeout = setTimeout(() => {
+      proc.kill();
+      reject(new Error(`claude timed out after ${CLAUDE_TIMEOUT_MS / 1000}s`));
+    }, CLAUDE_TIMEOUT_MS);
 
     proc.stdin.write(userPrompt);
     proc.stdin.end();
@@ -397,8 +415,10 @@ async function callClaude(userPrompt: string): Promise<SummaryResult[]> {
     });
 
     proc.on("close", (code) => {
+      clearTimeout(timeout);
+
       if (code !== 0) {
-        const detail = stderr || stdout.slice(0, 1000) || "(no output)";
+        const detail = extractClaudeError(stderr || stdout) || "(no output)";
         reject(new Error(`claude exited with code ${code}: ${detail}`));
         return;
       }
@@ -526,6 +546,8 @@ async function main() {
     `Done in ${totalElapsed}s. Wrote ${totalWritten} summaries, ${totalSkipped} failed/skipped.`
   );
 }
+
+export { main };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((err) => {

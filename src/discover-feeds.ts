@@ -6,26 +6,6 @@ const parser = new Parser({
   headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
 });
 
-const existingFeeds: string[] = existsSync("data/feeds.json")
-  ? JSON.parse(readFileSync("data/feeds.json", "utf-8"))
-  : [];
-const existingFeedSet = new Set(existingFeeds);
-
-// Tracks which source URLs we've already probed and what we found (or null)
-const CHECKED_PATH = "data/discovery/checked.json";
-const checked: Record<string, string | null> = existsSync(CHECKED_PATH)
-  ? JSON.parse(readFileSync(CHECKED_PATH, "utf-8"))
-  : {};
-
-const urls = [
-  ...new Set(
-    readFileSync("data/discovery/found.txt", "utf-8")
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean)
-  ),
-];
-
 // These categories won't have standard RSS feeds
 const SKIP_PATTERNS: RegExp[] = [
   /^https:\/\/github\.com/,
@@ -210,67 +190,88 @@ interface Result {
   error?: string;
 }
 
-console.log(`Processing ${urls.length} URLs (${existingFeedSet.size} feeds already known)...\n`);
+export async function discoverFeeds() {
+  const existingFeeds: string[] = existsSync("feeds.json")
+    ? JSON.parse(readFileSync("feeds.json", "utf-8"))
+    : [];
+  const existingFeedSet = new Set(existingFeeds);
 
-const results = await mapConcurrent<string, Result>(urls, 10, async (url) => {
-  if (shouldSkip(url)) {
-    console.log(`SKIP  ${url}`);
-    return { url, status: "skipped" };
-  }
+  const CHECKED_PATH = "discovery/checked.json";
+  const checked: Record<string, string | null> = existsSync(CHECKED_PATH)
+    ? JSON.parse(readFileSync(CHECKED_PATH, "utf-8"))
+    : {};
 
-  if (url in checked) {
-    console.log(`DONE  ${url}`);
-    return { url, status: "skipped" };
-  }
+  const urls = [
+    ...new Set(
+      readFileSync("discovery/found.txt", "utf-8")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+    ),
+  ];
 
-  try {
-    const result = await discoverFeed(url);
-    if (result) {
-      checked[url] = result.feed;
-      if (existingFeedSet.has(result.feed)) {
-        console.log(`HAVE  ${url} → ${result.feed}`);
-        return { url, status: "skipped" };
-      }
-      console.log(`FOUND ${url}\n   → ${result.feed} (${result.method})`);
-      return { url, status: "found", method: result.method, feed: result.feed };
+  console.log(`Processing ${urls.length} URLs (${existingFeedSet.size} feeds already known)...\n`);
+
+  const results = await mapConcurrent<string, Result>(urls, 10, async (url) => {
+    if (shouldSkip(url)) {
+      console.log(`SKIP  ${url}`);
+      return { url, status: "skipped" };
     }
-    checked[url] = null;
-    console.log(`NONE  ${url}`);
-    return { url, status: "none" };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    checked[url] = null;
-    console.log(`ERR   ${url}: ${msg}`);
-    return { url, status: "error", error: msg };
+
+    if (url in checked) {
+      console.log(`DONE  ${url}`);
+      return { url, status: "skipped" };
+    }
+
+    try {
+      const result = await discoverFeed(url);
+      if (result) {
+        checked[url] = result.feed;
+        if (existingFeedSet.has(result.feed)) {
+          console.log(`HAVE  ${url} → ${result.feed}`);
+          return { url, status: "skipped" };
+        }
+        console.log(`FOUND ${url}\n   → ${result.feed} (${result.method})`);
+        return { url, status: "found", method: result.method, feed: result.feed };
+      }
+      checked[url] = null;
+      console.log(`NONE  ${url}`);
+      return { url, status: "none" };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      checked[url] = null;
+      console.log(`ERR   ${url}: ${msg}`);
+      return { url, status: "error", error: msg };
+    }
+  });
+
+  const found = results.filter((r) => r.status === "found");
+  const skipped = results.filter((r) => r.status === "skipped");
+  const noFeed = results.filter((r) => r.status === "none" || r.status === "error");
+
+  // Append new feeds to feeds.json
+  const newFeeds = found.map((r) => r.feed!);
+  if (newFeeds.length > 0) {
+    const merged = [...existingFeeds, ...newFeeds];
+    writeFileSync("feeds.json", JSON.stringify(merged, null, 2) + "\n");
   }
-});
 
-const found = results.filter((r) => r.status === "found");
-const skipped = results.filter((r) => r.status === "skipped");
-const noFeed = results.filter((r) => r.status === "none" || r.status === "error");
+  writeFileSync(CHECKED_PATH, JSON.stringify(checked, null, 2) + "\n");
 
-// Append new feeds to feeds.json
-const newFeeds = found.map((r) => r.feed!);
-if (newFeeds.length > 0) {
-  const merged = [...existingFeeds, ...newFeeds];
-  writeFileSync("data/feeds.json", JSON.stringify(merged, null, 2) + "\n");
-}
+  writeFileSync(
+    "discovery/skipped.txt",
+    skipped.map((r) => r.url).join("\n") + "\n"
+  );
+  writeFileSync(
+    "discovery/no-feed.txt",
+    noFeed.map((r) => r.url).join("\n") + "\n"
+  );
 
-writeFileSync(CHECKED_PATH, JSON.stringify(checked, null, 2) + "\n");
-
-writeFileSync(
-  "data/discovery/skipped.txt",
-  skipped.map((r) => r.url).join("\n") + "\n"
-);
-writeFileSync(
-  "data/discovery/no-feed.txt",
-  noFeed.map((r) => r.url).join("\n") + "\n"
-);
-
-console.log(`\n--- Summary ---`);
-console.log(`New feeds found: ${newFeeds.length}`);
-console.log(`Skipped: ${skipped.length}`);
-console.log(`No feed found: ${noFeed.length}`);
-if (newFeeds.length > 0) {
-  console.log(`\nAppended ${newFeeds.length} new feeds to data/feeds.json (${existingFeeds.length} → ${existingFeeds.length + newFeeds.length} total)`)
+  console.log(`\n--- Summary ---`);
+  console.log(`New feeds found: ${newFeeds.length}`);
+  console.log(`Skipped: ${skipped.length}`);
+  console.log(`No feed found: ${noFeed.length}`);
+  if (newFeeds.length > 0) {
+    console.log(`\nAppended ${newFeeds.length} new feeds to feeds.json (${existingFeeds.length} → ${existingFeeds.length + newFeeds.length} total)`)
+  }
 }

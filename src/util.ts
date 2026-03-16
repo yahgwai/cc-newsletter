@@ -1,7 +1,7 @@
-import { writeFileSync, mkdirSync } from "fs";
+import { writeFileSync, mkdirSync, readdirSync, unlinkSync } from "fs";
 import { join } from "path";
 
-export const FEEDS_DIR = "data/feeds";
+export const FEEDS_DIR = "feeds";
 
 export function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
@@ -34,6 +34,11 @@ export function chunkAndWrite(
   }
 
   mkdirSync(outputDir, { recursive: true });
+
+  // Clean stale chunks from a previous run that may have produced more chunks
+  for (const f of readdirSync(outputDir)) {
+    if (/^chunk-\d+\.md$/.test(f)) unlinkSync(join(outputDir, f));
+  }
 
   for (let i = 0; i < chunks.length; i++) {
     const path = join(outputDir, `chunk-${i + 1}.md`);

@@ -158,7 +158,7 @@ async function runWithConcurrency<T>(
 
 export async function syncSitemap(
   sitemapUrl: string,
-  baseDir = "data/feeds"
+  baseDir = "feeds"
 ): Promise<string[]> {
   const res = await fetch(sitemapUrl, {
     headers: { "User-Agent": USER_AGENT },

@@ -14,7 +14,7 @@ interface GitHubRelease {
 
 export async function syncGithubReleases(
   repo: string,
-  baseDir = "data/feeds"
+  baseDir = "feeds"
 ): Promise<string[]> {
   const dirSlug = repo.replace("/", "--");
   const dir = `${baseDir}/${dirSlug}`;

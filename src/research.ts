@@ -69,7 +69,7 @@ async function callClaude(
 
     const proc = spawn(
       "claude",
-      ["-p", "--model", model, "--system-prompt", systemPrompt],
+      ["-p", "--model", model, "--allowedTools", "", "--system-prompt", systemPrompt],
       { stdio: ["pipe", "pipe", "pipe"], env }
     );
 
@@ -94,7 +94,13 @@ async function callClaude(
     proc.on("close", (code) => {
       clearTimeout(timer);
       if (code !== 0) {
-        const detail = stderr || stdout.slice(0, 1000) || "(no output)";
+        let detail: string;
+        try {
+          const parsed = JSON.parse(stderr);
+          detail = parsed.result || stderr.slice(0, 500);
+        } catch {
+          detail = stderr || stdout.slice(0, 1000) || "(no output)";
+        }
         reject(new Error(`claude exited with code ${code}: ${detail}`));
         return;
       }
@@ -635,12 +641,12 @@ async function main() {
   }
 
   if (!query) {
-    console.error('Usage: npx tsx src/research.ts "your research question" [--days N]');
+    console.error('Usage: collect research "your research question" [--days N]');
     process.exit(1);
   }
 
   const runId = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const runDir = join("data/research", runId);
+  const runDir = join("research", runId);
   mkdirSync(runDir, { recursive: true });
   writeFileSync(join(runDir, "query.txt"), query);
 
@@ -678,7 +684,11 @@ async function main() {
   console.log(answer);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+export { main };
+
+if (process.argv[1]?.includes("research")) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

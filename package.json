@@ -1,16 +1,15 @@
 {
-  "private": true,
+  "name": "collect-runner",
   "type": "module",
+  "bin": {
+    "collect": "./bin/collect.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "templates/"
+  ],
   "scripts": {
-    "sync-rss": "tsx src/sync-rss.ts",
-    "sync-github-releases": "tsx src/sync-github-releases.ts",
-    "sync-sitemaps": "tsx src/sync-sitemap.ts",
-    "summarise": "flock -n .summarise.lock tsx src/summarise.ts",
-    "ingest": "npm run sync-rss && npm run sync-github-releases && npm run sync-sitemaps && npm run summarise",
-    "recent-headers": "tsx src/recent-headers.ts",
-    "prepare": "tsx src/prepare-articles.ts",
-    "pdf": "bash -c 'pandoc data/newsletters/$0.md -t html --css data/newsletters/style.css -o data/newsletters/$0.pdf --pdf-engine=weasyprint'",
-    "research": "tsx src/research.ts",
     "test": "vitest run"
   },
   "dependencies": {

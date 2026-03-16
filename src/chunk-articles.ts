@@ -2,44 +2,47 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { FEEDS_DIR, chunkAndWrite } from "./util.js";
 
-const inputFile = process.argv[2];
-const outputDir = process.argv[3];
+export function chunkArticles(inputFile: string, outputDir: string) {
+  const headerPaths = readFileSync(inputFile, "utf-8")
+    .split("\n")
+    .map((l) => l.replace(/\s*\|.*$/, "").trim())
+    .filter((l) => l && !l.startsWith("→"));
 
-if (!inputFile || !outputDir) {
-  console.error("Usage: chunk-articles.ts <shortlist-file> <output-dir>");
-  process.exit(1);
-}
+  const entries: string[] = [];
 
-const headerPaths = readFileSync(inputFile, "utf-8")
-  .split("\n")
-  .map((l) => l.replace(/\s*\|.*$/, "").trim())
-  .filter((l) => l && !l.startsWith("→"));
+  for (const headerPath of headerPaths) {
+    const headerFullPath = join(FEEDS_DIR, headerPath);
+    const mdPath = join(FEEDS_DIR, headerPath.replace("-header.yaml", ".md"));
 
-const entries: string[] = [];
+    let header: string;
+    try {
+      header = readFileSync(headerFullPath, "utf-8").trim();
+    } catch {
+      continue;
+    }
 
-for (const headerPath of headerPaths) {
-  const headerFullPath = join(FEEDS_DIR, headerPath);
-  const mdPath = join(FEEDS_DIR, headerPath.replace("-header.yaml", ".md"));
+    let article = "";
+    try {
+      article = readFileSync(mdPath, "utf-8").trim();
+    } catch {
+      // No article body — include header only
+    }
 
-  let header: string;
-  try {
-    header = readFileSync(headerFullPath, "utf-8").trim();
-  } catch {
-    continue;
+    entries.push(
+      [`Header: ${headerPath}`, header, "", article, "", "---", ""].join("\n")
+    );
   }
 
-  let article = "";
-  try {
-    article = readFileSync(mdPath, "utf-8").trim();
-  } catch {
-    // No article body — include header only
-  }
+  const chunkCount = chunkAndWrite(entries, outputDir);
 
-  entries.push(
-    [`Header: ${headerPath}`, header, "", article, "", "---", ""].join("\n")
-  );
+  console.log(`Chunked ${headerPaths.length} articles into ${chunkCount} chunks in ${outputDir}/`);
 }
 
-const chunkCount = chunkAndWrite(entries, outputDir);
-
-console.log(`Chunked ${headerPaths.length} articles into ${chunkCount} chunks in ${outputDir}/`);
+if (process.argv[1]?.includes("chunk-articles")) {
+  if (process.argv[2] && process.argv[3]) {
+    chunkArticles(process.argv[2], process.argv[3]);
+  } else {
+    console.error("Usage: chunk-articles.ts <shortlist-file> <output-dir>");
+    process.exit(1);
+  }
+}

@@ -3,32 +3,70 @@
 ## What this is
 
 A Claude Code plugin that lets anyone create a newsletter about any subject.
-The user installs the plugin, runs `/newsletter:create`, answers some questions,
-and gets a working newsletter pipeline — source discovery, content ingestion,
-summarisation, and LLM-guided editorial production.
+The user installs the plugin, runs `/newsletter-toolkit:create`, answers some
+questions, and gets a working newsletter pipeline — source discovery, content
+ingestion, summarisation, and LLM-guided editorial production.
 
-The plugin is the engine. It owns no data. Each newsletter lives in a
-user-chosen directory (defaults to cwd) and is fully self-contained.
+One install, everything works. The plugin bundles the collection engine
+(feed syncing, chunking, summarisation) alongside the editorial brain
+(commands, agents). Each newsletter lives in a user-chosen directory
+and is fully self-contained.
+
+## Current state
+
+collect-runner works as a CLI tool + Claude Code skills:
+
+- `npm install -g collect-runner` gives the user the `collect` command
+- `collect init` scaffolds a project by copying skill templates into
+  `.claude/skills/`
+- The skills call `collect` commands via Bash
+- The user runs skills like `/setup` and `/discover` interactively
+
+Problems with this approach:
+- Two install steps: npm package + manually running `collect init`
+- Skills live in each project's `.claude/` as copies — updates require
+  re-running `collect init`
+- No agent definitions — the pipeline prompts live in
+  `newsletter-design.md` and the user (or Claude) interprets them
+  manually each run
+
+## What the plugin changes
+
+Everything ships as one plugin. The TypeScript source that currently
+lives in collect-runner moves into the plugin's `server/` directory
+and is pre-built to `server/dist/`. Commands call it via
+`node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js` instead of a globally
+installed `collect` binary. No separate npm install, no `collect init`,
+no copying files around.
+
+The engine uses `claude -p` (headless CLI mode) for summarisation and
+research, so the only prerequisite is Claude Code itself — which the
+user already has.
 
 ## User experience
+
+### First-time setup
+
+```
+/plugin install newsletter-toolkit@<marketplace>
+```
 
 ### Creating a newsletter
 
 ```
 mkdir ~/newsletters/rust-weekly && cd ~/newsletters/rust-weekly
-/newsletter:create
+/newsletter-toolkit:create
 ```
 
-The skill asks:
+The command asks:
 - What subject? ("The Rust programming language ecosystem")
 - Who's the audience? ("Experienced Rust developers")
-- What tone? (Shows a few options, or the user describes it)
-- How often? (Weekly, daily)
+- What tone? (Shows options, or the user describes it)
 - Any sources you already know about? (URLs, GitHub repos)
 
 It then:
-1. Writes `newsletter.yaml` and `design.md`
-2. Seeds `data/feeds.json` and `data/github-releases.json` from user input
+1. Writes `newsletter-design.md` (editorial brain: tone, sections, pipeline)
+2. Seeds `feeds.json` and `github-releases.json` from user input
 3. Runs source discovery to find more feeds
 4. Shows the user what it found, lets them adjust
 5. Runs first ingest so there's content to work with
@@ -38,261 +76,252 @@ It then:
 ```
 cd ~/newsletters/rust-weekly
 
-/newsletter:discover          # find more sources
-/newsletter:ingest            # sync feeds + summarise
-/newsletter:draft             # run the full editorial pipeline
-/newsletter:draft --daily     # quick daily briefing (lighter process)
-/newsletter:review            # load latest draft for editing
-/newsletter:pdf               # generate PDF from latest newsletter
+/newsletter-toolkit:discover       # find more sources
+/newsletter-toolkit:ingest         # sync feeds + summarise
+/newsletter-toolkit:draft          # run the full editorial pipeline
+/newsletter-toolkit:review         # load latest draft for editing
+/newsletter-toolkit:pdf            # generate PDF from latest newsletter
 ```
 
 ### Automation
 
 ```
-/newsletter:automate
+# Ingest every 4 hours
+0 */4 * * * cd ~/newsletters/rust-weekly && claude -p "/newsletter-toolkit:ingest"
+
+# Draft every Sunday at 8pm
+0 20 * * 0 cd ~/newsletters/rust-weekly && claude -p "/newsletter-toolkit:draft"
 ```
 
-Sets up cron jobs (or systemd timers, or tells the user what to add):
-- Ingest every N hours
-- Draft on schedule (using `claude -p` headless mode)
-- Notify when a draft is ready for review
+Both run via `claude -p` so the plugin's commands are available. Ingest
+uses `claude -p --model haiku` internally for batch summarisation.
 
 ## Newsletter directory structure
 
-Everything the user cares about lives here. Back it up, git-track it,
-move it — the plugin doesn't care where it is.
+Everything the user cares about lives here. The plugin doesn't care where
+this directory is — back it up, git-track it, move it.
 
 ```
-rust-weekly/                    # user runs claude here
-  newsletter.yaml               # identity: subject, audience, schedule
-  design.md                     # editorial: tone, sections, word budget
-  data/
-    feeds.json                  # RSS/Atom feed URLs
-    github-releases.json        # GitHub repos to track releases
-    feeds/                      # synced articles
-      {domain}/
-        {slug}-header.yaml      # metadata + summary + mentions
-        {slug}.md               # full article content
-    discovery/
-      found.txt                 # discovered URLs
-      checked.json              # feed extraction cache
-      skipped.txt               # URLs without feeds
-  output/
-    newsletters/
-      YYYY-MM-DD.md
-      YYYY-MM-DD.pdf
-    style.css                   # PDF stylesheet (generated on create, editable)
+rust-weekly/
+  newsletter-design.md            # editorial: tone, sections, word budget, pipeline
+  feeds.json                      # RSS/Atom feed URLs
+  github-releases.json            # GitHub repos to track releases
+  sitemaps.json                   # documentation sitemaps to track
+  feeds/                          # synced articles (auto-created)
+    {domain}/
+      {slug}-header.yaml          # metadata + summary + mentions
+      {slug}.md                   # full article content
+  discovery/
+    found.txt                     # discovered URLs
+    checked.json                  # feed extraction cache
+  runs/                           # pipeline run artifacts, one dir per date
+    YYYY-MM-DD/
+      chunk-*.md                  # step 1: collected headers
+      filter-*.md                 # step 2: relevance decisions
+      prioritise-*.md             # step 3: priority decisions
+      deep-read/                  # step 4: article chunks for evaluation
+      evaluations-*.md            # step 4: evaluation decisions
+      evaluations.md              # step 4: combined evaluations
+      newsletter-input/           # step 5: prepared article chunks
+      draft.md                    # step 7: pre-edit version
+      editorial-changes.md        # step 7: change summary
+  newsletters/
+    YYYY-MM-DD.md                 # finished newsletters
+    YYYY-MM-DD.pdf
+    style.css                     # PDF stylesheet (generated on create, editable)
 ```
 
-### newsletter.yaml
+This matches the current working layout. No wrapper directories.
 
-Top-level identity. Read by skills and scripts to know what this
-newsletter is about.
+### newsletter-design.md
 
-```yaml
-subject: "The Rust programming language ecosystem"
-audience: "Experienced Rust developers"
-schedule: weekly
-```
+The editorial brain. Contains everything an LLM agent needs to make
+editorial decisions: subject, audience, tone, sections with descriptions,
+citation rules, word budget, and the complete production pipeline.
 
-Intentionally minimal. The editorial detail lives in `design.md` where
-there's room for nuance. This file is for scripts that need a quick
-answer to "what is this newsletter?"
-
-### design.md
-
-The editorial brain. Tone, sections, citation rules, word budget,
-production pipeline steps. Equivalent to today's `docs/newsletter-design.md`
-but generated during `/newsletter:create` and tailored to the subject.
-
-This is the document that LLM agents read when making editorial decisions.
-The user can edit it freely — it's their newsletter's voice.
+Generated during `/newsletter-toolkit:create` and tailored to the subject.
+The user can edit it freely — it's their newsletter's voice. The pipeline
+steps (collect, filter, prioritise, evaluate, prepare, write, edit) are
+the same for every newsletter; only the section names and editorial
+criteria change.
 
 ## Plugin structure
 
 ```
 newsletter-toolkit/
   .claude-plugin/
-    plugin.json                 # plugin manifest
-  .mcp.json                    # MCP server config
-  skills/
-    create/SKILL.md             # interactive setup wizard
-    discover/SKILL.md           # find new sources
-    ingest/SKILL.md             # sync + summarise
-    draft/SKILL.md              # full editorial pipeline
-    review/SKILL.md             # load draft for editing
-    pdf/SKILL.md                # generate PDF
-    automate/SKILL.md           # set up scheduled runs
+    plugin.json
+  commands/
+    create.md                     # interactive setup wizard
+    discover.md                   # find new sources
+    ingest.md                     # sync feeds + summarise
+    draft.md                      # full editorial pipeline
+    review.md                     # load latest draft for editing
+    pdf.md                        # generate PDF
   agents/
-    filter/AGENT.md             # relevance filtering subagent
-    prioritise/AGENT.md         # prioritisation subagent
-    evaluate/AGENT.md           # deep-read evaluation subagent
-    writer/AGENT.md             # newsletter writing subagent
-    editor/AGENT.md             # editorial pass subagent
-  server/                       # MCP server (the engine)
-    package.json                # dependencies: rss-parser, turndown, tsx
-    src/
-      index.ts                  # MCP server entry point
-      sync-rss.ts               # feed syncing
-      sync-github-releases.ts   # GitHub release syncing
-      summarise.ts              # batch summarisation
-      discover-feeds.ts         # feed extraction from URLs
-      recent-headers.ts         # collect recent headers into chunks
-      prepare-articles.ts       # parse evaluations for writing
-      chunk-articles.ts         # chunk articles by word count
-      chunk-headers.ts          # chunk headers by word count
-      combine-lists.ts          # merge + deduplicate lists
-      util.ts                   # shared utilities
+    filter.md                     # relevance filtering subagent
+    prioritise.md                 # prioritisation subagent
+    evaluate.md                   # deep-read evaluation subagent
+    writer.md                     # newsletter section writing subagent
+    assembler.md                  # final assembly subagent
+    editor.md                     # editorial pass subagent
+  settings.json                   # default tool permissions
+  server/
+    package.json                  # dependencies: rss-parser, turndown
+    src/                          # TypeScript source
+      cli.ts                      # CLI entry point (same as today)
+      sync-rss.ts
+      sync-lib.ts
+      sync-github-releases.ts
+      sync-github-releases-lib.ts
+      sync-sitemap.ts
+      sync-sitemap-lib.ts
+      summarise.ts
+      research.ts
+      discover-feeds.ts
+      recent-headers.ts
+      prepare-articles.ts
+      chunk-articles.ts
+      chunk-headers.ts
+      extract-includes.ts
+      combine-lists.ts
+      append-found.ts
+      count-tokens.ts
+      util.ts
+    dist/                         # pre-built JS (shipped with plugin)
+      cli.js
+      ...
 ```
 
-### Why an MCP server
+### plugin.json
 
-The scripts need dependencies (rss-parser, turndown) and a runtime (tsx).
-An MCP server bundles all of this into a single process that starts when
-the plugin loads. It exposes the mechanical operations as tools:
-
-| Tool | What it does |
-|------|-------------|
-| `sync_feeds` | Fetch new articles from all feeds in data/feeds.json |
-| `sync_github_releases` | Fetch new releases from tracked repos |
-| `summarise` | Summarise unsummarised articles via Claude Haiku |
-| `ingest` | sync_feeds + sync_github_releases + summarise |
-| `discover_feeds` | Extract RSS/Atom feeds from URLs in discovery/found.txt |
-| `recent_headers` | Collect recent headers into chunks, return run dir |
-| `prepare_articles` | Parse evaluations, chunk articles for writing |
-| `chunk_headers` | Re-chunk a header list |
-| `chunk_articles` | Re-chunk an article list |
-| `combine_lists` | Merge and deduplicate text files |
-| `generate_pdf` | Convert newsletter markdown to PDF |
-
-All tools operate on cwd. No path arguments needed for normal use.
-
-Skills orchestrate these tools with LLM judgment. The mechanical parts
-call MCP tools; the editorial parts use subagents.
-
-### Skills vs agents
-
-Skills are user-facing commands (`/newsletter:draft`). Agents are
-subagents launched by skills for parallel editorial work.
-
-A skill like `/newsletter:draft` would:
-1. Call `ingest` tool (make sure feeds are fresh)
-2. Call `recent_headers` tool (collect recent content)
-3. Launch filter agents (one per chunk) → combine results
-4. Launch prioritise agents (one per chunk) → combine results
-5. Call `chunk_articles` tool
-6. Launch evaluate agents (one per chunk) → combine results
-7. Call `prepare_articles` tool
-8. Launch writer agents (one per chunk or one for all)
-9. Launch editor agent (final pass)
-10. Write output to `output/newsletters/YYYY-MM-DD.md`
-
-The skill prompt describes this orchestration. The agents contain
-the editorial judgment prompts (what's relevant, what's worth including,
-how to write well).
-
-## Generalisation from the current codebase
-
-### What stays the same
-
-The scripts are already topic-neutral:
-- sync-rss.ts, sync-lib.ts — fetch feeds, convert to markdown
-- sync-github-releases.ts — fetch releases
-- summarise.ts — batch summarisation (system prompt is generic)
-- discover-feeds.ts — mechanical feed extraction
-- recent-headers.ts, prepare-articles.ts, chunk-*.ts, combine-lists.ts
-- util.ts, all tests
-
-These move into the MCP server largely unchanged, wrapped as tool
-handlers instead of CLI entry points.
-
-### What changes
-
-**Newsletter design doc** — currently hardcoded for "The Claude Code
-Review." Becomes a generated template filled during `/newsletter:create`.
-The template defines section types (features, security, techniques,
-community, wider world, etc.) and the skill adapts them to the subject.
-A Rust newsletter might have: New Releases, RFC Spotlight, Crate of
-the Week, Ecosystem, Community. A security newsletter might have:
-Vulnerabilities, Advisories, Tools, Research.
-
-**Production pipeline prompts** — currently embedded in
-`docs/newsletter-design.md` and `docs/operations.md`. Move into skill
-and agent prompt files within the plugin. The pipeline steps are the
-same regardless of subject; only the editorial criteria change, and
-those come from `design.md` which the agents read at runtime.
-
-**Directory layout** — `data/` and `output/` replace the current
-`data/feeds/` and `data/newsletters/` split. `docs/` goes away (the
-plugin owns the process docs; the user's `design.md` is at the root).
-
-**package.json scripts** — replaced by MCP tools. No npm scripts in
-the user's directory.
-
-### What the user's directory does NOT contain
-
-- No `src/` directory
-- No `package.json`
-- No `node_modules/`
-- No test files
-- No process documentation
-
-The user's directory is pure content and config. The engine lives in
-the plugin.
-
-## Automation via headless mode
-
-`/newsletter:automate` sets up scheduled runs using `claude -p`
-(headless CLI mode). The cron entry would look something like:
-
-```
-# Ingest every 4 hours
-0 */4 * * * cd ~/newsletters/rust-weekly && claude -p "run /newsletter:ingest"
-
-# Draft every Sunday at 8pm
-0 20 * * 0 cd ~/newsletters/rust-weekly && claude -p "run /newsletter:draft"
+```json
+{
+  "name": "newsletter-toolkit",
+  "version": "0.1.0",
+  "description": "Create and produce newsletters about any subject"
+}
 ```
 
-The `claude -p` invocations have access to the same plugin and MCP
-tools as interactive sessions. The skills handle everything; no
-separate shell scripts needed.
+### How commands call the engine
 
-## Open questions
+Commands and agents call the bundled CLI via Bash, using
+`${CLAUDE_PLUGIN_ROOT}` to locate the built files:
 
-### Section templates
-How much structure should `/newsletter:create` impose? Options:
-- Offer a few newsletter archetypes (product-focused, ecosystem-focused,
-  research-focused) with pre-built section lists
-- Let the LLM generate sections based on the subject description
-- Start minimal (briefing + 3 sections + hot take) and let the user add more
+```
+node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js recent-headers
+node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js chunk-articles shortlist.txt deep-read
+node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js extract-includes relevant.txt filter-*.md
+```
 
-Leaning toward: LLM generates a first draft of sections based on subject
-and audience, user adjusts. The current Claude Code newsletter sections
-emerged from iteration, not upfront design — the setup wizard should
-facilitate the same process quickly.
+Same CLI, same interface, just referenced from the plugin directory
+instead of a global install. The settings.json pre-approves these:
 
-### Daily vs weekly
-The current pipeline is built for weekly depth. A daily briefing needs
-a lighter process — maybe just summarise what's new and highlight the
-top 3 items, no deep-read step. The `/newsletter:draft --daily` flag
-would trigger a shorter pipeline. Details TBD.
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js:*)"
+    ]
+  }
+}
+```
 
-### Plugin dependencies
-The MCP server needs Node.js and its npm dependencies. PDF generation
-needs pandoc and weasyprint. How to handle missing system dependencies:
-- Check on first use and tell the user what to install
-- Offer to install them (platform-specific)
-- Make PDF optional (it already is — the newsletter is markdown-first)
+### Commands vs agents
 
-### Summarisation model
-Currently hardcodes Claude Haiku via the `claude` CLI. Should this be
-configurable? Haiku is the right default (fast, cheap, good enough for
-summaries), but some users might want a different model. Could be a
-field in `newsletter.yaml`.
+Commands are user-facing (`/newsletter-toolkit:draft`). Agents are
+subagents that commands launch for parallel editorial work.
 
-### Multiple newsletters, one machine
-Nothing prevents running multiple newsletters — they're independent
-directories. But if someone has 10 newsletters, they might want to
-share a feed cache (some feeds are relevant to multiple topics) or
-run discovery across all of them. Not designing for this now, but
-the directory-per-newsletter approach doesn't preclude it.
+A command like `/newsletter-toolkit:draft` orchestrates the full pipeline:
+
+1. Call `cli.js recent-headers` (collect recent content into chunks)
+2. Launch filter agents (one per chunk) — combine results with
+   `cli.js extract-includes`
+3. Re-chunk with `cli.js chunk-headers`, launch prioritise agents
+   (one per chunk) — combine results with `cli.js extract-includes`
+4. Chunk articles with `cli.js chunk-articles`, launch evaluate agents
+   (one per chunk) — concatenate results
+5. Call `cli.js prepare` (prepare article chunks for writing)
+6. Launch writer agents (one per chunk or one for all)
+7. If multiple chunks: launch assembler agent (combine sections, write
+   briefing, signal/noise, hot take)
+8. Launch editor agent (final pass)
+9. Write output to `newsletters/YYYY-MM-DD.md`
+
+The command prompt describes this orchestration. The agent prompts contain
+the editorial judgment (what's relevant, what's worth including, how to
+write well). The agents read `newsletter-design.md` at runtime for the
+subject-specific editorial criteria.
+
+## What moves where
+
+### Source files → `server/`
+
+Everything in collect-runner's `src/` moves to `server/src/`. No logic
+changes. The CLI entry point (`cli.ts`) stays — it's the same interface,
+just invoked from the plugin directory instead of a global binary.
+
+Pre-built JS goes in `server/dist/`. The plugin ships with `dist/`
+already populated so users don't need a build step.
+
+### Dependencies → `server/node_modules/`
+
+The plugin ships with `server/node_modules/` pre-installed. Four
+runtime dependencies:
+
+- `rss-parser` — RSS feed parsing
+- `turndown` — HTML to markdown conversion
+- `@anthropic-ai/sdk` — token counting during sync
+- `tsx` — TypeScript execution (only if shipping source instead of
+  pre-built dist)
+
+If shipping pre-built `dist/`, tsx becomes a dev dependency and
+`node_modules/` only contains rss-parser, turndown, and
+@anthropic-ai/sdk.
+
+### Skills → commands
+
+- `templates/skills/setup/SKILL.md` → `commands/create.md`
+- `templates/skills/discover/SKILL.md` → `commands/discover.md`
+
+### New commands
+
+- `commands/draft.md` — full editorial pipeline orchestration
+- `commands/ingest.md` — sync + summarise
+- `commands/review.md` — load latest draft for editing
+- `commands/pdf.md` — generate PDF
+
+### New agents
+
+- `agents/filter.md` — relevance filtering subagent
+- `agents/prioritise.md` — prioritisation subagent
+- `agents/evaluate.md` — deep-read evaluation subagent
+- `agents/writer.md` — newsletter section writing subagent
+- `agents/assembler.md` — final assembly subagent
+- `agents/editor.md` — editorial pass subagent
+
+### What happens to collect-runner
+
+The collect-runner repo becomes the newsletter-toolkit plugin repo.
+The CLI remains as an entry point (used by commands via Bash), but
+it's no longer distributed as a separate npm package. `collect init`
+and `templates/` go away — the plugin replaces them.
+
+Tests stay with the source in `server/src/`.
+
+## Future improvements
+
+### MCP server
+
+The CLI could be wrapped as an MCP server later. This would mean
+commands call MCP tools directly instead of shelling out via Bash.
+Cleaner integration, no permission allowlisting needed. The source
+files stay the same — only the entry point changes from CLI dispatch
+to MCP tool handlers.
+
+### PDF dependencies
+
+PDF generation needs pandoc and weasyprint. These are system packages
+that can't be bundled. The PDF command should check for them and give
+clear install instructions. PDF is optional — the newsletter is
+markdown-first.

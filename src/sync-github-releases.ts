@@ -1,14 +1,16 @@
 import { readFileSync } from "fs";
-import { syncGithubReleases } from "./sync-github-releases-lib.js";
+import { syncGithubReleases as syncRepo } from "./sync-github-releases-lib.js";
 
-const repos: string[] = JSON.parse(
-  readFileSync("data/github-releases.json", "utf-8")
-);
+export async function syncGithubReleases() {
+  const repos: string[] = JSON.parse(
+    readFileSync("github-releases.json", "utf-8")
+  );
 
-for (const repo of repos) {
-  try {
-    await syncGithubReleases(repo);
-  } catch (err) {
-    console.error(`failed to fetch releases for ${repo}:`, err);
+  for (const repo of repos) {
+    try {
+      await syncRepo(repo);
+    } catch (err) {
+      console.error(`failed to fetch releases for ${repo}:`, err);
+    }
   }
 }
