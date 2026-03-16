@@ -3,3 +3,6 @@
 - Skill to generate newsletter
 - Skill for each of the user-facing collect commands
 - Prompt for newsletter title
+- Clean up docs
+- Clean up data structures
+- Make API token optional

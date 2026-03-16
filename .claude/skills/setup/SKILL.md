@@ -1,8 +1,8 @@
 ---
 name: setup
-description: Set up a new newsletter — configure subject, sections, tone, and discover sources
+description: Set up a new newsletter — configure subject, sections, tone, visual style, and discover sources
 disable-model-invocation: true
-allowed-tools: WebSearch, WebFetch, Bash(collect append-found *), Bash(collect discover-feeds), Read, Write
+allowed-tools: WebSearch, WebFetch, Bash(collect append-found *), Bash(collect discover-feeds), Read, Write, Agent
 ---
 
 You are a setup wizard for a newsletter content collection system. Walk the
@@ -99,7 +99,60 @@ Compare the discovered sources against the newsletter sections:
 This is iterative — the user may want to go back to Step 4 for more sources
 or back to Step 3 to adjust sections.
 
-## Step 6: Generate artifacts
+## Step 6: Visual style
+
+Now that the newsletter's content is defined, ask the user how they want it to
+look. The CSS will style the markdown → HTML/PDF rendering (typography, colors,
+layout, code blocks, blockquotes, print rules, etc.).
+
+Offer a few starting points to spark ideas:
+
+- **Clean tech briefing** — monospace headings, minimal color, print-friendly
+- **Editorial magazine** — serif body, strong typographic hierarchy, elegant
+- **Hacker zine** — dark background, terminal aesthetic, neon accents
+- **Warm and readable** — friendly, rounded type, generous whitespace
+
+But make clear: **these are just starting points — they can ask for anything
+they want, and be as specific as they like.** A Bauhaus-inspired layout with
+Futura headings, a specific hex palette, a newspaper broadsheet feel, brutalist
+with no rounded corners — whatever they have in mind. The more specific they
+are, the better the result.
+
+Ask about:
+1. General aesthetic direction (or a reference newsletter/website they like)
+2. Color preferences — dark/light, accent colors, brand colors
+3. Typography direction — serif, sans-serif, monospace, specific fonts
+
+Once the user has described what they want, **dispatch a background agent** to
+research and generate the CSS. Use the Agent tool with `run_in_background: true`
+so the user can continue with the rest of the wizard while the style is being
+created.
+
+The agent prompt should include:
+- The user's style description and any reference URLs
+- The newsletter's title and section names (so the agent knows the document
+  structure it's styling)
+- Instructions to **search extensively** — look at newsletter templates,
+  typographic references, color theory resources, and real-world examples
+  that match the requested aesthetic. Study how CSS frameworks and polished
+  sites handle typography, spacing, and color — but write raw CSS, not
+  framework dependencies. Don't settle for the first result. The agent should
+  explore broadly, compare approaches, and synthesize the best ideas into a
+  cohesive standalone stylesheet
+- Fetch any reference URLs the user provided to study their styling
+- Select fonts that match the aesthetic from Google Fonts or similar free
+  sources, and include the `@import` rules in the CSS
+- Generate a complete `style.css` that covers: `@page` print rules,
+  body/heading/paragraph typography, code blocks, blockquotes, lists, links,
+  horizontal rules, and any newsletter-specific flourishes that fit the theme
+
+The agent must use `subagent_type: "general-purpose"` and needs WebSearch and
+WebFetch access. It should write the result to `style.css` in the project root.
+
+Tell the user the style is being generated in the background and continue to
+the next step.
+
+## Step 7: Generate artifacts
 
 Write the final configuration files:
 
