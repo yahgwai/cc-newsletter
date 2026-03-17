@@ -2,7 +2,7 @@
 name: setup
 description: Set up a new newsletter — configure subject, sections, tone, visual style, and discover sources
 disable-model-invocation: true
-allowed-tools: WebSearch, WebFetch, Bash(collect append-found *), Bash(collect discover-feeds), Read, Write, Agent
+allowed-tools: WebSearch, WebFetch, Bash(collect append-found *), Bash(collect discover-feeds), Bash(collect ingest), Bash(collect newsletter *), Bash(collect pdf *), Read, Write, Agent
 ---
 
 You are a setup wizard for a newsletter content collection system. Walk the
@@ -186,7 +186,31 @@ Write the array of sitemap URLs to track (may be empty `[]`).
 
 ### Print next steps
 
-Tell the user:
-1. Run `collect ingest` to pull content from the new sources
-2. Run `/discover` to find more sources iteratively
-3. The newsletter pipeline is documented in `newsletter-design.md`
+Tell the user the configuration is complete, then ask if they'd like to run
+an ingest now to collect data for the first newsletter. Let them know it
+takes a few minutes — good time to go make a coffee. The output will stream
+past quickly but that's fine.
+
+If yes, run:
+```
+collect ingest
+```
+
+When ingest completes, ask if they'd like to generate the first newsletter.
+Let them know it takes about 20 minutes — time for another coffee.
+
+If yes, run:
+```
+collect newsletter
+```
+
+When the newsletter is done, generate the PDF:
+```
+collect pdf <date>
+```
+where `<date>` is today's date in YYYY-MM-DD format.
+
+If they decline either step, let them know they can run these commands later:
+1. `collect ingest` to pull content from sources
+2. `collect newsletter` to generate a newsletter from collected content
+3. `/discover` to find more sources iteratively
