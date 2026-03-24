@@ -1,5 +1,7 @@
 {
   "name": "collect",
+  "version": "0.1.0",
   "description": "Newsletter content collection and generation toolkit",
-  "version": "0.1.0"
+  "repository": "https://github.com/yahgwai/collect",
+  "license": "MIT"
 }
