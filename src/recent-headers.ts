@@ -20,7 +20,7 @@ function parseCliArgs(argv: string[]): { days: number; outputDir: string } {
     }
   }
 
-  return { days, outputDir: `runs/${date}` };
+  return { days, outputDir: `newsletters/${date}` };
 }
 
 function parseHeaderYaml(content: string) {

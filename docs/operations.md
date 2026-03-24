@@ -29,9 +29,6 @@ in `sitemaps.json`. All write articles to `feeds/`. Summarise
 picks up any articles without summaries and sends them to Claude Haiku in
 batches.
 
-The summarise step uses a lock file (`.summarise.lock`) so concurrent runs
-don't collide.
-
 To capture sync logs for the audit trail:
 
 ```

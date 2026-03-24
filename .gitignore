@@ -1,3 +1,2 @@
 node_modules/
-.summarise.lock
-.env
+dist/

@@ -1,8 +1,0 @@
-feeds/
-discovery/
-runs/
-research/
-newsletters/*.md
-newsletters/*.pdf
-.summarise.lock
-.env

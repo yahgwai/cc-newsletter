@@ -1,7 +1,7 @@
 import { writeFileSync, mkdirSync, readdirSync, unlinkSync } from "fs";
 import { join } from "path";
 
-export const FEEDS_DIR = "feeds";
+export const FEEDS_DIR = "content";
 
 export function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;

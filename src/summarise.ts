@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import { spawn } from "child_process";
-import { fileURLToPath } from "url";
 
 const MAX_TOKENS_PER_BATCH = 80_000;
 const MAX_ARTICLES_PER_BATCH = 20;
@@ -233,7 +232,7 @@ const JSON_SCHEMA = JSON.stringify({
   required: ["articles"],
 });
 
-export function findUnprocessedArticles(feedsDir = "feeds"): Article[] {
+export function findUnprocessedArticles(feedsDir = "content"): Article[] {
   const articles: Article[] = [];
 
   let sources: string[];
@@ -548,10 +547,3 @@ async function main() {
 }
 
 export { main };
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-}

@@ -1,26 +1,25 @@
 {
   "name": "collect-runner",
   "type": "module",
-  "bin": {
-    "collect": "./bin/collect.js"
-  },
   "files": [
-    "bin/",
-    "src/",
-    "templates/"
+    "dist/",
+    "src/"
   ],
   "scripts": {
-    "test": "vitest run"
+    "build": "tsup && vitest run src/bundle.test.ts",
+    "test": "vitest run --exclude src/bundle.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "rss-parser": "^3.13.0",
-    "tsx": "^4.19.0",
     "turndown": "^7.2.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.1",
     "@types/turndown": "^5.0.5",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }
 }

@@ -1,8 +1,5 @@
-- The wizard needs to prompt about styles
-- See the ingest output from within cc
 - Skill to generate newsletter
 - Skill for each of the user-facing collect commands
-- Prompt for newsletter title
 - Clean up docs
-- Clean up data structures
-- Make API token optional
+- Add cron job for ingest and newsletter generation
+- Make the plugin global

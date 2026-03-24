@@ -32,7 +32,7 @@ Bullet points or short paragraphs.
 
 #### Source of truth rule
 
-The GitHub releases feed (`feeds/anthropics--claude-code/`) is the
+The GitHub releases feed (`content/anthropics--claude-code/`) is the
 authoritative source for what shipped. A feature belongs in New Features
 only if it appears in a release published within the newsletter's date
 range (or the preceding 14 days, to catch features that span issue

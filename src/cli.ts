@@ -1,22 +1,5 @@
-import { existsSync, readFileSync, mkdirSync, copyFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-
-// Load .env from cwd, but skip ANTHROPIC_API_KEY — it overrides
-// Claude CLI's Max subscription auth when leaked to subprocesses.
-// count-tokens.ts reads the key from .env directly.
-if (existsSync(".env")) {
-  for (const line of readFileSync(".env", "utf-8").split("\n")) {
-    const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*)\s*$/);
-    if (match && match[1] !== "ANTHROPIC_API_KEY" && !(match[1] in process.env)) {
-      process.env[match[1]] = match[2];
-    }
-  }
-}
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const packageRoot = join(__dirname, "..");
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -33,7 +16,6 @@ Commands:
   newsletter [--date X] [--days N]  Run full newsletter pipeline
   recent-headers [days] [--date X]  Collect recent headers into chunks
   prepare <evals> <outdir>      Prepare evaluated articles for writing
-  research <query> [--days N]   Map-reduce research across collected articles
   discover-feeds                Extract RSS feeds from discovered URLs
   append-found <file> <url...>  Deduplicate and append URLs to a file
   chunk-articles <list> <outdir>  Chunk article list with full content
@@ -51,56 +33,23 @@ async function run() {
 
   switch (command) {
     case "init": {
-      const templatesDir = join(packageRoot, "templates");
-
-      // .claude/CLAUDE.md
-      mkdirSync(".claude/skills/collect", { recursive: true });
-      mkdirSync(".claude/skills/discover", { recursive: true });
-      mkdirSync(".claude/skills/setup", { recursive: true });
-      copyFileSync(join(templatesDir, "CLAUDE.md"), ".claude/CLAUDE.md");
-      console.log("wrote .claude/CLAUDE.md");
-
-      // Skills
-      copyFileSync(
-        join(templatesDir, "skills", "discover", "SKILL.md"),
-        ".claude/skills/discover/SKILL.md"
-      );
-      console.log("wrote .claude/skills/discover/SKILL.md");
-      copyFileSync(
-        join(templatesDir, "skills", "setup", "SKILL.md"),
-        ".claude/skills/setup/SKILL.md"
-      );
-      console.log("wrote .claude/skills/setup/SKILL.md");
-      copyFileSync(
-        join(templatesDir, "skills", "collect", "SKILL.md"),
-        ".claude/skills/collect/SKILL.md"
-      );
-      console.log("wrote .claude/skills/collect/SKILL.md");
-
-      // Config files
-      if (!existsSync("feeds.json")) {
-        writeFileSync("feeds.json", "[]\n");
-        console.log("wrote feeds.json");
-      }
-      if (!existsSync("github-releases.json")) {
-        writeFileSync("github-releases.json", "[]\n");
-        console.log("wrote github-releases.json");
-      }
-      if (!existsSync("sitemaps.json")) {
-        writeFileSync("sitemaps.json", "[]\n");
-        console.log("wrote sitemaps.json");
+      mkdirSync("config", { recursive: true });
+      for (const file of ["feeds.json", "github-releases.json", "sitemaps.json"]) {
+        if (!existsSync(`config/${file}`)) {
+          writeFileSync(`config/${file}`, "[]\n");
+          console.log(`wrote config/${file}`);
+        }
       }
 
-      // .gitignore
       if (!existsSync(".gitignore")) {
-        copyFileSync(join(templatesDir, "gitignore"), ".gitignore");
+        writeFileSync(".gitignore", "content/\ndiscovery/\nnewsletters/\n");
         console.log("wrote .gitignore");
       }
 
       console.log("\nProject initialized. Next steps:");
-      console.log("  1. Run /setup to configure your newsletter");
+      console.log("  1. Run /collect:setup to configure your newsletter");
       console.log("  2. Run collect ingest to pull content from sources");
-      console.log("  3. Run /discover to find more sources");
+      console.log("  3. Run /collect:discover to find more sources");
       break;
     }
 
@@ -160,14 +109,6 @@ async function run() {
         process.exit(1);
       }
       prepare(args[0], args[1]);
-      break;
-    }
-
-    case "research": {
-      const { main } = await import("./research.js");
-      // research.ts reads process.argv directly, so set it up
-      process.argv = [process.argv[0], "research", ...args];
-      await main();
       break;
     }
 
@@ -234,7 +175,7 @@ async function run() {
       }
       const date = args[0];
       execSync(
-        `pandoc newsletters/${date}.md -t html --css newsletters/style.css -o newsletters/${date}.pdf --pdf-engine=weasyprint`,
+        `pandoc newsletters/${date}/newsletter.md -t html --css config/style.css -o newsletters/${date}/newsletter.pdf --pdf-engine=weasyprint`,
         { stdio: "inherit" }
       );
       break;

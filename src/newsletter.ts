@@ -284,9 +284,9 @@ export async function newsletter(args: string[]) {
     }
   }
 
-  const runDir = `runs/${date}`;
+  const runDir = `newsletters/${date}`;
   mkdirSync(runDir, { recursive: true });
-  const designDoc = readFileSync("newsletter-design.md", "utf-8");
+  const designDoc = readFileSync("config/newsletter-design.md", "utf-8");
   const throttle = makeThrottle();
   const totalStart = performance.now();
   const draftPath = join(runDir, "draft.md");
@@ -548,8 +548,7 @@ export async function newsletter(args: string[]) {
   }
 
   // Step 6: Write the newsletter
-  mkdirSync("newsletters", { recursive: true });
-  const newsletterPath = `newsletters/${date}.md`;
+  const newsletterPath = join(runDir, "newsletter.md");
   const evaluations = readFileSync(evaluationsPath, "utf-8");
 
   if (!force && existsSync(draftPath)) {
