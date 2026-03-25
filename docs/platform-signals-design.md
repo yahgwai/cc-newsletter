@@ -134,9 +134,9 @@ launched with `model: "opus"` and granted the `Read` and `Write` tools.
 ### Step 1: Collect recent headers (script)
 
 ```
-cc-newsletter recent-headers                   # defaults to 7 days, today's date
-cc-newsletter recent-headers 14                # override days
-cc-newsletter recent-headers --date 2026-02-24 # override date for reruns
+cc-newsletter recent-headers <data-dir>                   # defaults to 7 days, today's date
+cc-newsletter recent-headers <data-dir> 14                # override days
+cc-newsletter recent-headers <data-dir> --date 2026-02-24 # override date for reruns
 ```
 
 Outputs chunks to `$RUN/chunk-*.md`. Prints the run directory path as the
@@ -171,13 +171,13 @@ This is a filtering pass — cast a wide net. When in doubt, include it.
 Extract the INCLUDE paths:
 
 ```
-cc-newsletter extract-includes $RUN/relevant.txt $RUN/filter-*.md
+cc-newsletter extract-includes <data-dir> $RUN/relevant.txt $RUN/filter-*.md
 ```
 
 ### Step 3: Prioritise for deep reading (LLM)
 
 ```
-cc-newsletter chunk-headers $RUN/relevant.txt $RUN/prioritise
+cc-newsletter chunk-headers <data-dir> $RUN/relevant.txt $RUN/prioritise
 ```
 
 Launch one subagent per chunk. Each subagent should:
@@ -206,13 +206,13 @@ Err on the side of including something if it looks promising.
 Extract the INCLUDE paths:
 
 ```
-cc-newsletter extract-includes $RUN/shortlist.txt $RUN/prioritise-*.md
+cc-newsletter extract-includes <data-dir> $RUN/shortlist.txt $RUN/prioritise-*.md
 ```
 
 ### Step 4: Deep read and evaluate (LLM)
 
 ```
-cc-newsletter chunk-articles $RUN/shortlist.txt $RUN/deep-read
+cc-newsletter chunk-articles <data-dir> $RUN/shortlist.txt $RUN/deep-read
 ```
 
 Launch one subagent per chunk. The chunk files contain the full article
@@ -241,7 +241,7 @@ chunk number). The main agent concatenates them into `$RUN/evaluations.md`.
 ### Step 5: Prepare article content (script)
 
 ```
-cc-newsletter prepare $RUN/evaluations.md $RUN/newsletter-input
+cc-newsletter prepare <data-dir> $RUN/evaluations.md $RUN/newsletter-input
 ```
 
 This writes `$RUN/newsletter-input/includes.txt` (one header path per line),
@@ -255,7 +255,7 @@ calculates the total word count of all INCLUDE articles, and:
      INCLUDE article
   2. Group articles that share the same or overlapping sections
   3. Write one file per group to `$RUN/newsletter-input/`
-  4. Run `cc-newsletter chunk-articles <group-file> $RUN/newsletter-input/group-N/`
+  4. Run `cc-newsletter chunk-articles <data-dir> <group-file> $RUN/newsletter-input/group-N/`
      for each group file
 
 ### Step 6: Write the newsletter (LLM)

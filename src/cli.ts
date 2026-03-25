@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 
-const [command, ...args] = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
 
 function usage() {
-  console.log(`Usage: cc-newsletter <command> [options]
+  console.log(`Usage: cc-newsletter <command> <data-dir> [options]
 
 Commands:
-  init                          Scaffold a new project in the current directory
-  ingest                        Sync all sources and summarise new articles
+  init <data-dir>               Scaffold a new newsletter in the given directory
+  ingest <data-dir>             Sync all sources and summarise new articles
   sync-rss                      Fetch new articles from all RSS feeds
   sync-github-releases          Fetch new releases from GitHub repos
   sync-sitemaps                 Fetch new pages from tracked sitemaps
@@ -26,10 +26,20 @@ Commands:
 }
 
 async function run() {
-  if (command && command !== "--help" && command !== "-h" && (args.includes("--help") || args.includes("-h"))) {
+  if (rawArgs.length === 0 || rawArgs.includes("--help") || rawArgs.includes("-h")) {
     usage();
     return;
   }
+
+  const [command, dataDir, ...args] = rawArgs;
+
+  if (!dataDir) {
+    console.error("Usage: cc-newsletter <command> <data-dir> [options]");
+    process.exit(1);
+  }
+
+  mkdirSync(dataDir, { recursive: true });
+  process.chdir(dataDir);
 
   switch (command) {
     case "init": {
@@ -180,12 +190,6 @@ async function run() {
       );
       break;
     }
-
-    case undefined:
-    case "--help":
-    case "-h":
-      usage();
-      break;
 
     default:
       console.error(`Unknown command: ${command}`);

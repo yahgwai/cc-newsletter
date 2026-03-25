@@ -209,9 +209,9 @@ Commands and agents call the bundled CLI via Bash, using
 `${CLAUDE_PLUGIN_ROOT}` to locate the built files:
 
 ```
-node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js recent-headers
-node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js chunk-articles shortlist.txt deep-read
-node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js extract-includes relevant.txt filter-*.md
+node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js recent-headers <data-dir>
+node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js chunk-articles <data-dir> shortlist.txt deep-read
+node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js extract-includes <data-dir> relevant.txt filter-*.md
 ```
 
 Same CLI, same interface, just referenced from the plugin directory
@@ -234,14 +234,14 @@ subagents that commands launch for parallel editorial work.
 
 A command like `/newsletter-toolkit:draft` orchestrates the full pipeline:
 
-1. Call `cli.js recent-headers` (collect recent content into chunks)
+1. Call `cli.js recent-headers <data-dir>` (collect recent content into chunks)
 2. Launch filter agents (one per chunk) — combine results with
-   `cli.js extract-includes`
-3. Re-chunk with `cli.js chunk-headers`, launch prioritise agents
-   (one per chunk) — combine results with `cli.js extract-includes`
-4. Chunk articles with `cli.js chunk-articles`, launch evaluate agents
+   `cli.js extract-includes <data-dir>`
+3. Re-chunk with `cli.js chunk-headers <data-dir>`, launch prioritise agents
+   (one per chunk) — combine results with `cli.js extract-includes <data-dir>`
+4. Chunk articles with `cli.js chunk-articles <data-dir>`, launch evaluate agents
    (one per chunk) — concatenate results
-5. Call `cli.js prepare` (prepare article chunks for writing)
+5. Call `cli.js prepare <data-dir>` (prepare article chunks for writing)
 6. Launch writer agents (one per chunk or one for all)
 7. If multiple chunks: launch assembler agent (combine sections, write
    briefing, signal/noise, hot take)

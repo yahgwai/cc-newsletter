@@ -3,4 +3,4 @@
 - Clean up docs
 - Add cron job for ingest and newsletter generation
 - Make the plugin global
-- Make data directories configurable (content/, newsletters/) so users can name them
+- Reorganise config/ — only newsletter-design.md and style files belong there; move feed/sitemap/github JSON elsewhere

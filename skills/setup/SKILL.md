@@ -9,6 +9,14 @@ You are a setup wizard for a newsletter content collection system. Walk the
 user through configuring their newsletter step by step. Each step involves
 back-and-forth conversation — do not rush through them.
 
+The user will provide a newsletter name as an argument (e.g., `/cc-newsletter:setup my-newsletter`).
+Use this name to construct the data path: `${CLAUDE_PLUGIN_DATA}/<name>`.
+
+Begin by running init to scaffold the data directory:
+```
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js init ${CLAUDE_PLUGIN_DATA}/<name>
+```
+
 ## Step 1: Subject clarification
 
 Ask what the newsletter is about. Push back on answers that are too vague
@@ -80,12 +88,12 @@ decide how to track it:
 
 Use the append-found tool to add discovered URLs:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js append-found discovery/found.txt <url> [url...]
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js append-found ${CLAUDE_PLUGIN_DATA}/<name> discovery/found.txt <url> [url...]
 ```
 
 After adding URLs, run feed discovery:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js discover-feeds
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js discover-feeds ${CLAUDE_PLUGIN_DATA}/<name>
 ```
 
 Report what was found: how many feeds discovered, which URLs had no feeds,
@@ -151,14 +159,14 @@ The agent prompt should include:
   horizontal rules, and any newsletter-specific flourishes that fit the theme
 
 The agent must use `subagent_type: "general-purpose"` and needs WebSearch and
-WebFetch access. It should write the result to `config/style.css`.
+WebFetch access. It should write the result to `${CLAUDE_PLUGIN_DATA}/<name>/config/style.css`.
 
 Tell the user the style is being generated in the background and continue to
 the next step.
 
 ## Step 7: Generate artifacts
 
-Write the final configuration files:
+Write the final configuration files to `${CLAUDE_PLUGIN_DATA}/<name>/config/`:
 
 ### config/newsletter-design.md
 
@@ -197,7 +205,7 @@ past quickly but that's fine.
 
 If yes, run:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name>
 ```
 
 When ingest completes, ask if they'd like to generate the first newsletter.
@@ -205,16 +213,16 @@ Let them know it takes about 20 minutes — time for another coffee.
 
 If yes, run:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>
 ```
 
 When the newsletter is done, generate the PDF:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js pdf <date>
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js pdf ${CLAUDE_PLUGIN_DATA}/<name> <date>
 ```
 where `<date>` is today's date in YYYY-MM-DD format.
 
 If they decline either step, let them know they can run these commands later:
-1. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest` to pull content from sources
-2. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter` to generate a newsletter from collected content
-3. `/cc-newsletter:discover` to find more sources iteratively
+1. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name>` to pull content from sources
+2. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>` to generate a newsletter from collected content
+3. `/cc-newsletter:discover <name>` to find more sources iteratively

@@ -15,9 +15,9 @@ The core insight: **collection and consumption are separate problems.** Cast a w
 ## Pipeline
 
 1. **Discover** — `/discover` — agent reads the subject from `newsletter-design.md`, searches the web, finds relevant sites, appends their URLs to `discovery/found.txt`
-2. **Extract feeds** — `cc-newsletter discover-feeds` — mechanically finds RSS/Atom feeds from discovered URLs
-3. **Sync** — `cc-newsletter sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `cc-newsletter sync-github-releases` — fetches releases from tracked GitHub repos
-4. **Summarise** — `cc-newsletter summarise` — sends articles to Claude Haiku for summarisation
+2. **Extract feeds** — `cc-newsletter discover-feeds <data-dir>` — mechanically finds RSS/Atom feeds from discovered URLs
+3. **Sync** — `cc-newsletter sync-rss <data-dir>` — fetches all RSS feeds, converts entries to Markdown files; `cc-newsletter sync-github-releases <data-dir>` — fetches releases from tracked GitHub repos
+4. **Summarise** — `cc-newsletter summarise <data-dir>` — sends articles to Claude Haiku for summarisation
 
 Run `/discover` again or say "find more" to expand coverage iteratively.
 

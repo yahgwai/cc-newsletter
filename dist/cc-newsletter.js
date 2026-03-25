@@ -4276,9 +4276,9 @@ var require_sax = __commonJS({
         var me = this;
         if (!me._parser["on" + ev] && streamWraps.indexOf(ev) !== -1) {
           me._parser["on" + ev] = function() {
-            var args2 = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments);
-            args2.splice(0, 0, ev);
-            me.emit.apply(me, args2);
+            var args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments);
+            args.splice(0, 0, ev);
+            me.emit.apply(me, args);
           };
         }
         return Stream2.prototype.on.call(me, ev, handler);
@@ -9100,7 +9100,7 @@ var require_select = __commonJS({
         return selectors[":is"](sel);
       },
       ":nth-match": function(param, last) {
-        var args2 = param.split(/\s*,\s*/), arg = args2.shift(), test = compileGroup(args2.join(","));
+        var args = param.split(/\s*,\s*/), arg = args.shift(), test = compileGroup(args.join(","));
         return nth(arg, test, last);
       },
       ":nth-last-match": function(param) {
@@ -9552,10 +9552,10 @@ var require_ChildNode = __commonJS({
     "use strict";
     var Node2 = require_Node();
     var LinkedList = require_LinkedList();
-    var createDocumentFragmentFromArguments = function(document, args2) {
+    var createDocumentFragmentFromArguments = function(document, args) {
       var docFrag = document.createDocumentFragment();
-      for (var i = 0; i < args2.length; i++) {
-        var argItem = args2[i];
+      for (var i = 0; i < args.length; i++) {
+        var argItem = args[i];
         var isNode = argItem instanceof Node2;
         docFrag.appendChild(isNode ? argItem : document.createTextNode(String(argItem)));
       }
@@ -14578,7 +14578,7 @@ var require_Document = __commonJS({
         },
         set: utils.nyi
       },
-      write: { value: function(args2) {
+      write: { value: function(args) {
         if (!this.isHTML) utils.InvalidStateError();
         if (!this._parser)
           return;
@@ -14587,7 +14587,7 @@ var require_Document = __commonJS({
         var s = arguments.join("");
         this._parser.parse(s);
       } },
-      writeln: { value: function writeln(args2) {
+      writeln: { value: function writeln(args) {
         this.write(Array.prototype.join.call(arguments, "") + "\n");
       } },
       open: { value: function() {
@@ -24553,12 +24553,12 @@ function getDefaultFetch() {
   }
   throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new Anthropic({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
 }
-function makeReadableStream(...args2) {
+function makeReadableStream(...args) {
   const ReadableStream = globalThis.ReadableStream;
   if (typeof ReadableStream === "undefined") {
     throw new Error("`ReadableStream` is not defined as a global; You will need to polyfill it, `globalThis.ReadableStream = ReadableStream`");
   }
-  return new ReadableStream(...args2);
+  return new ReadableStream(...args);
 }
 function ReadableStreamFrom(iterable) {
   let iter = Symbol.asyncIterator in iterable ? iterable[Symbol.asyncIterator]() : iterable[Symbol.iterator]();
@@ -26518,7 +26518,7 @@ var init_BetaMessageStream = __esm({
         await this.done();
         return __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalText).call(this);
       }
-      _emit(event, ...args2) {
+      _emit(event, ...args) {
         if (__classPrivateFieldGet(this, _BetaMessageStream_ended, "f"))
           return;
         if (event === "end") {
@@ -26528,10 +26528,10 @@ var init_BetaMessageStream = __esm({
         const listeners = __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event];
         if (listeners) {
           __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event] = listeners.filter((l) => !l.once);
-          listeners.forEach(({ listener }) => listener(...args2));
+          listeners.forEach(({ listener }) => listener(...args));
         }
         if (event === "abort") {
-          const error = args2[0];
+          const error = args[0];
           if (!__classPrivateFieldGet(this, _BetaMessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
             Promise.reject(error);
           }
@@ -26541,7 +26541,7 @@ var init_BetaMessageStream = __esm({
           return;
         }
         if (event === "error") {
-          const error = args2[0];
+          const error = args[0];
           if (!__classPrivateFieldGet(this, _BetaMessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
             Promise.reject(error);
           }
@@ -28230,7 +28230,7 @@ var init_MessageStream = __esm({
         await this.done();
         return __classPrivateFieldGet(this, _MessageStream_instances, "m", _MessageStream_getFinalText).call(this);
       }
-      _emit(event, ...args2) {
+      _emit(event, ...args) {
         if (__classPrivateFieldGet(this, _MessageStream_ended, "f"))
           return;
         if (event === "end") {
@@ -28240,10 +28240,10 @@ var init_MessageStream = __esm({
         const listeners = __classPrivateFieldGet(this, _MessageStream_listeners, "f")[event];
         if (listeners) {
           __classPrivateFieldGet(this, _MessageStream_listeners, "f")[event] = listeners.filter((l) => !l.once);
-          listeners.forEach(({ listener }) => listener(...args2));
+          listeners.forEach(({ listener }) => listener(...args));
         }
         if (event === "abort") {
-          const error = args2[0];
+          const error = args[0];
           if (!__classPrivateFieldGet(this, _MessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
             Promise.reject(error);
           }
@@ -28253,7 +28253,7 @@ var init_MessageStream = __esm({
           return;
         }
         if (event === "error") {
-          const error = args2[0];
+          const error = args[0];
           if (!__classPrivateFieldGet(this, _MessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
             Promise.reject(error);
           }
@@ -30415,8 +30415,8 @@ function formatArticle(article) {
     ""
   ].join("\n");
 }
-function recentHeaders(args2) {
-  const { days, outputDir } = parseCliArgs(args2);
+function recentHeaders(args) {
+  const { days, outputDir } = parseCliArgs(args);
   const articles = collectArticles(days);
   const entries = articles.map(formatArticle);
   const chunkCount = chunkAndWrite(entries, outputDir);
@@ -30776,18 +30776,18 @@ function wipeFiles(dir, pattern) {
     if (pattern.test(f)) unlinkSync2(join8(dir, f));
   }
 }
-async function newsletter(args2) {
+async function newsletter(args) {
   let date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   let days = 7;
   let force = false;
-  for (let i = 0; i < args2.length; i++) {
-    if (args2[i] === "--date" && args2[i + 1]) {
-      date = args2[i + 1];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--date" && args[i + 1]) {
+      date = args[i + 1];
       i++;
-    } else if (args2[i] === "--days" && args2[i + 1]) {
-      days = parseInt(args2[i + 1], 10);
+    } else if (args[i] === "--days" && args[i + 1]) {
+      days = parseInt(args[i + 1], 10);
       i++;
-    } else if (args2[i] === "--force") {
+    } else if (args[i] === "--force") {
       force = true;
     }
   }
@@ -31589,13 +31589,13 @@ var init_combine_lists = __esm({
 // src/cli.ts
 import { existsSync as existsSync7, mkdirSync as mkdirSync8, writeFileSync as writeFileSync11 } from "fs";
 import { execSync } from "child_process";
-var [command, ...args] = process.argv.slice(2);
+var rawArgs = process.argv.slice(2);
 function usage() {
-  console.log(`Usage: cc-newsletter <command> [options]
+  console.log(`Usage: cc-newsletter <command> <data-dir> [options]
 
 Commands:
-  init                          Scaffold a new project in the current directory
-  ingest                        Sync all sources and summarise new articles
+  init <data-dir>               Scaffold a new newsletter in the given directory
+  ingest <data-dir>             Sync all sources and summarise new articles
   sync-rss                      Fetch new articles from all RSS feeds
   sync-github-releases          Fetch new releases from GitHub repos
   sync-sitemaps                 Fetch new pages from tracked sitemaps
@@ -31612,10 +31612,17 @@ Commands:
   pdf <date>                    Convert newsletter markdown to PDF`);
 }
 async function run() {
-  if (command && command !== "--help" && command !== "-h" && (args.includes("--help") || args.includes("-h"))) {
+  if (rawArgs.length === 0 || rawArgs.includes("--help") || rawArgs.includes("-h")) {
     usage();
     return;
   }
+  const [command, dataDir, ...args] = rawArgs;
+  if (!dataDir) {
+    console.error("Usage: cc-newsletter <command> <data-dir> [options]");
+    process.exit(1);
+  }
+  mkdirSync8(dataDir, { recursive: true });
+  process.chdir(dataDir);
   switch (command) {
     case "init": {
       mkdirSync8("config", { recursive: true });
@@ -31747,11 +31754,6 @@ async function run() {
       );
       break;
     }
-    case void 0:
-    case "--help":
-    case "-h":
-      usage();
-      break;
     default:
       console.error(`Unknown command: ${command}`);
       usage();

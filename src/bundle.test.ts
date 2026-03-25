@@ -1,5 +1,7 @@
 import { execSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, mkdtempSync, writeFileSync, mkdirSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import { describe, expect, it } from "vitest";
 
 describe("bundle", () => {
@@ -15,28 +17,38 @@ describe("bundle", () => {
   });
 
   it("loads every command without import errors", () => {
-    // Each command triggers its dynamic import() path.
-    // We just need them to load — not succeed at runtime.
-    const commands = [
-      "sync-rss --help",
-      "sync-github-releases --help",
-      "sync-sitemaps --help",
-      "summarise --help",
-      "newsletter --help",
-      "discover-feeds --help",
-      "append-found --help",
-      "recent-headers --help",
-      "chunk-articles --help",
-      "chunk-headers --help",
-      "extract-includes --help",
-      "combine-lists --help",
-      "prepare --help",
-    ];
-    for (const cmd of commands) {
-      // --help triggers usage() before the command runs, so it exits 0
-      // without needing real data or network access
-      const out = execSync(`node ${bundle} ${cmd}`, { encoding: "utf-8" });
-      expect(out).toContain("Usage:");
+    const tmpDir = mkdtempSync(join(tmpdir(), "cc-newsletter-test-"));
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+    writeFileSync(join(tmpDir, "config/feeds.json"), "[]\n");
+    writeFileSync(join(tmpDir, "config/github-releases.json"), "[]\n");
+    writeFileSync(join(tmpDir, "config/sitemaps.json"), "[]\n");
+
+    try {
+      // Each command triggers its dynamic import() path.
+      // We just need them to load — not succeed at runtime.
+      const commands = [
+        "sync-rss",
+        "sync-github-releases",
+        "sync-sitemaps",
+        "summarise",
+        "newsletter",
+        "discover-feeds",
+        "append-found",
+        "recent-headers",
+        "chunk-articles",
+        "chunk-headers",
+        "extract-includes",
+        "combine-lists",
+        "prepare",
+      ];
+      for (const cmd of commands) {
+        const out = execSync(`node ${bundle} ${cmd} ${tmpDir} --help`, {
+          encoding: "utf-8",
+        });
+        expect(out).toContain("Usage:");
+      }
+    } finally {
+      rmSync(tmpDir, { recursive: true });
     }
   });
 });
