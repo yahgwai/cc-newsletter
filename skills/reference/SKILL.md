@@ -26,8 +26,9 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/my
 
 ## Commands
 
-### Project setup
+### Management
 
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js list ${CLAUDE_PLUGIN_DATA}` — List existing newsletters
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js init <data-dir>` — Scaffold a new newsletter: creates config files and `.gitignore` in the data directory
 
 ### Content syncing
@@ -61,3 +62,7 @@ These are used internally by the newsletter pipeline but can be run standalone:
 ### Output
 
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js pdf <data-dir> <date>` — Convert `newsletters/YYYY-MM-DD/newsletter.md` to PDF via pandoc/weasyprint
+
+### Scheduling
+
+The setup wizard (`/cc-newsletter:setup`) offers to install cron jobs for automatic ingestion and newsletter generation. Crontab entries use marker comments (`# cc-newsletter:<name>:<ingest|newsletter>`) so they can be identified and managed later. Run `crontab -l | grep cc-newsletter` to see installed schedules.

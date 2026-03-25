@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 
 const rawArgs = process.argv.slice(2);
@@ -7,6 +7,7 @@ function usage() {
   console.log(`Usage: cc-newsletter <command> <data-dir> [options]
 
 Commands:
+  list <parent-dir>             List newsletters in a directory
   init <data-dir>               Scaffold a new newsletter in the given directory
   ingest <data-dir>             Sync all sources and summarise new articles
   sync-rss                      Fetch new articles from all RSS feeds
@@ -32,6 +33,22 @@ async function run() {
   }
 
   const [command, dataDir, ...args] = rawArgs;
+
+  if (command === "list") {
+    if (!dataDir || !existsSync(dataDir)) {
+      console.log("No newsletters found.");
+      return;
+    }
+    const entries = readdirSync(dataDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    if (entries.length === 0) {
+      console.log("No newsletters found.");
+    } else {
+      for (const name of entries) console.log(name);
+    }
+    return;
+  }
 
   if (!dataDir) {
     console.error("Usage: cc-newsletter <command> <data-dir> [options]");

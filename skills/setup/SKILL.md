@@ -2,7 +2,7 @@
 name: setup
 description: Set up a new newsletter — configure subject, sections, tone, visual style, and discover sources
 disable-model-invocation: true
-allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js *), Read, Write, Agent
+allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js *), Bash(crontab *), Read, Write, Agent
 ---
 
 You are a setup wizard for a newsletter content collection system. Walk the
@@ -226,3 +226,34 @@ If they decline either step, let them know they can run these commands later:
 1. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name>` to pull content from sources
 2. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>` to generate a newsletter from collected content
 3. `/cc-newsletter:discover <name>` to find more sources iteratively
+
+## Step 8: Scheduling
+
+Ask the user if they'd like to schedule automatic ingestion and newsletter
+generation. If they decline, skip this step.
+
+If yes, read the existing crontab with `crontab -l` to see what's already
+scheduled. Look for existing `# cc-newsletter:` markers to understand what
+other newsletters are running and when.
+
+Suggest schedules:
+- **Ingest**: daily, defaulting to 6:00 AM. If other newsletters already have
+  ingest jobs, offset by 2 hours (8:00 AM, 10:00 AM, etc.) to avoid
+  overlapping API usage.
+- **Newsletter**: weekly, defaulting to Sunday at 8:00 PM. If other newsletters
+  already have newsletter jobs, offset by a day (Monday, Tuesday, etc.) since
+  generation takes ~20 minutes of heavy API usage.
+
+Present the proposed schedule clearly and let the user adjust times, cadences,
+or days before installing.
+
+When installing, use marker comments so the entries can be found later:
+```
+# cc-newsletter:<name>:ingest
+<cron-expr> node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name> >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
+# cc-newsletter:<name>:newsletter
+<cron-expr> node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name> >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
+```
+
+Write the updated crontab by piping the full contents to `crontab -`.
+Confirm what was installed and when the first run will happen.
