@@ -4,14 +4,14 @@
 
 | Command | What it does |
 |---------|-------------|
-| `collect ingest` | Sync all sources then summarise new articles |
-| `collect sync-rss` | Fetch new articles from all RSS feeds |
-| `collect sync-github-releases` | Fetch new releases from GitHub repos |
-| `collect sync-sitemaps` | Fetch new pages from tracked sitemaps |
-| `collect summarise` | Summarise any unsummarised articles |
-| `collect recent-headers` | Collect recent headers into chunks for newsletter |
-| `collect prepare <evaluations> <output-dir>` | Prepare evaluated articles for writing |
-| `collect pdf YYYY-MM-DD` | Convert a newsletter markdown to PDF |
+| `cc-newsletter ingest` | Sync all sources then summarise new articles |
+| `cc-newsletter sync-rss` | Fetch new articles from all RSS feeds |
+| `cc-newsletter sync-github-releases` | Fetch new releases from GitHub repos |
+| `cc-newsletter sync-sitemaps` | Fetch new pages from tracked sitemaps |
+| `cc-newsletter summarise` | Summarise any unsummarised articles |
+| `cc-newsletter recent-headers` | Collect recent headers into chunks for newsletter |
+| `cc-newsletter prepare <evaluations> <output-dir>` | Prepare evaluated articles for writing |
+| `cc-newsletter pdf YYYY-MM-DD` | Convert a newsletter markdown to PDF |
 | `npm test` | Run tests |
 
 ## Day-to-day: ingesting content
@@ -19,7 +19,7 @@
 Run this regularly (daily, or before generating a newsletter):
 
 ```
-collect ingest
+cc-newsletter ingest
 ```
 
 This syncs all sources and summarises any new articles. `sync-rss` fetches from
@@ -32,7 +32,7 @@ batches.
 To capture sync logs for the audit trail:
 
 ```
-collect ingest 2>&1 | tee -a sync-log/$(date +%Y-%m-%d).log
+cc-newsletter ingest 2>&1 | tee -a sync-log/$(date +%Y-%m-%d).log
 ```
 
 ## Occasionally: discovering new sources
@@ -41,8 +41,8 @@ When you want to expand coverage:
 
 1. Run `/discover` — the agent searches the web and appends
    URLs to `discovery/found.txt`
-2. Extract feeds: `collect discover-feeds`
-3. Run `collect ingest` to pull content from the new feeds
+2. Extract feeds: `cc-newsletter discover-feeds`
+3. Run `cc-newsletter ingest` to pull content from the new feeds
 
 Discovery is iterative. Say "find more" or "focus on security blogs" to
 steer subsequent runs. No need to do this every week — the feed list is
@@ -78,16 +78,16 @@ version:
 
 ```
 # 1. Make sure feeds are fresh
-collect ingest
+cc-newsletter ingest
 
 # 2. Collect recent headers into chunks
-collect recent-headers
+cc-newsletter recent-headers
 
 # 3. Steps 2-7 are LLM steps run by Claude
 #    Tell Claude: "Run the newsletter pipeline following newsletter-design.md"
 
 # 4. After the newsletter is written, generate the PDF
-collect pdf YYYY-MM-DD
+cc-newsletter pdf YYYY-MM-DD
 ```
 
 Steps 2-7 of the pipeline (filtering, prioritising, deep reading, writing,
@@ -97,7 +97,7 @@ are run by Claude using subagents.
 ## File layout
 
 ```
-src/                    # source code (in collect-runner package)
+src/                    # source code (in cc-newsletter package)
   sync-rss.ts           # sync all RSS feeds
   sync-lib.ts           # RSS parsing, HTML conversion, dedup
   sync-github-releases.ts      # sync GitHub releases

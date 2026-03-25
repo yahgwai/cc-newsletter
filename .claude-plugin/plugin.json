@@ -1,7 +1,7 @@
 {
-  "name": "collect",
+  "name": "cc-newsletter",
   "version": "0.1.0",
   "description": "Newsletter content collection and generation toolkit",
-  "repository": "https://github.com/yahgwai/collect",
+  "repository": "https://github.com/yahgwai/cc-newsletter",
   "license": "MIT"
 }

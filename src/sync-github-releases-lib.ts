@@ -28,7 +28,7 @@ export async function syncGithubReleases(
     const res = await fetch(url, {
       headers: {
         Accept: "application/vnd.github+json",
-        "User-Agent": "collect-runner",
+        "User-Agent": "cc-newsletter",
       },
     });
     if (!res.ok) throw new Error(`GitHub API returned ${res.status} for ${repo}`);

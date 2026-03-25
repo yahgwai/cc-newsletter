@@ -2,7 +2,7 @@
   "version": "1",
   "plugins": [
     {
-      "name": "collect",
+      "name": "cc-newsletter",
       "source": ".",
       "version": "0.1.0",
       "description": "Newsletter content collection and generation toolkit"

@@ -1,5 +1,5 @@
 {
-  "name": "collect-runner",
+  "name": "cc-newsletter",
   "type": "module",
   "files": [
     "dist/",

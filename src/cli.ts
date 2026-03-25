@@ -4,7 +4,7 @@ import { execSync } from "child_process";
 const [command, ...args] = process.argv.slice(2);
 
 function usage() {
-  console.log(`Usage: collect <command> [options]
+  console.log(`Usage: cc-newsletter <command> [options]
 
 Commands:
   init                          Scaffold a new project in the current directory
@@ -47,9 +47,9 @@ async function run() {
       }
 
       console.log("\nProject initialized. Next steps:");
-      console.log("  1. Run /collect:setup to configure your newsletter");
-      console.log("  2. Run collect ingest to pull content from sources");
-      console.log("  3. Run /collect:discover to find more sources");
+      console.log("  1. Run /cc-newsletter:setup to configure your newsletter");
+      console.log("  2. Run cc-newsletter ingest to pull content from sources");
+      console.log("  3. Run /cc-newsletter:discover to find more sources");
       break;
     }
 
@@ -105,7 +105,7 @@ async function run() {
     case "prepare": {
       const { prepare } = await import("./prepare-articles.js");
       if (args.length < 2) {
-        console.error("Usage: collect prepare <evaluations-file> <output-dir>");
+        console.error("Usage: cc-newsletter prepare <evaluations-file> <output-dir>");
         process.exit(1);
       }
       prepare(args[0], args[1]);
@@ -121,7 +121,7 @@ async function run() {
     case "append-found": {
       const { appendFound } = await import("./append-found.js");
       if (args.length < 1) {
-        console.error("Usage: collect append-found <file> <url...>");
+        console.error("Usage: cc-newsletter append-found <file> <url...>");
         process.exit(1);
       }
       appendFound(args[0], args.slice(1));
@@ -131,7 +131,7 @@ async function run() {
     case "chunk-articles": {
       const { chunkArticles } = await import("./chunk-articles.js");
       if (args.length < 2) {
-        console.error("Usage: collect chunk-articles <shortlist-file> <output-dir>");
+        console.error("Usage: cc-newsletter chunk-articles <shortlist-file> <output-dir>");
         process.exit(1);
       }
       chunkArticles(args[0], args[1]);
@@ -141,7 +141,7 @@ async function run() {
     case "chunk-headers": {
       const { chunkHeaders } = await import("./chunk-headers.js");
       if (args.length < 2) {
-        console.error("Usage: collect chunk-headers <input-list> <output-dir>");
+        console.error("Usage: cc-newsletter chunk-headers <input-list> <output-dir>");
         process.exit(1);
       }
       chunkHeaders(args[0], args[1]);
@@ -151,7 +151,7 @@ async function run() {
     case "extract-includes": {
       const { extractIncludes } = await import("./extract-includes.js");
       if (args.length < 2) {
-        console.error("Usage: collect extract-includes <output-file> <input-file-1> [input-file-2] ...");
+        console.error("Usage: cc-newsletter extract-includes <output-file> <input-file-1> [input-file-2] ...");
         process.exit(1);
       }
       extractIncludes(args[0], args.slice(1));
@@ -161,7 +161,7 @@ async function run() {
     case "combine-lists": {
       const { combineLists } = await import("./combine-lists.js");
       if (args.length < 2) {
-        console.error("Usage: collect combine-lists <output-file> <input-file-1> [input-file-2] ...");
+        console.error("Usage: cc-newsletter combine-lists <output-file> <input-file-1> [input-file-2] ...");
         process.exit(1);
       }
       combineLists(args[0], args.slice(1));
@@ -170,7 +170,7 @@ async function run() {
 
     case "pdf": {
       if (args.length < 1) {
-        console.error("Usage: collect pdf <date>");
+        console.error("Usage: cc-newsletter pdf <date>");
         process.exit(1);
       }
       const date = args[0];

@@ -14,18 +14,18 @@ and is fully self-contained.
 
 ## Current state
 
-collect-runner works as a CLI tool + Claude Code skills:
+cc-newsletter works as a CLI tool + Claude Code skills:
 
-- `npm install -g collect-runner` gives the user the `collect` command
-- `collect init` scaffolds a project by copying skill templates into
+- `npm install -g cc-newsletter` gives the user the `cc-newsletter` command
+- `cc-newsletter init` scaffolds a project by copying skill templates into
   `.claude/skills/`
-- The skills call `collect` commands via Bash
+- The skills call `cc-newsletter` commands via Bash
 - The user runs skills like `/setup` and `/discover` interactively
 
 Problems with this approach:
-- Two install steps: npm package + manually running `collect init`
+- Two install steps: npm package + manually running `cc-newsletter init`
 - Skills live in each project's `.claude/` as copies — updates require
-  re-running `collect init`
+  re-running `cc-newsletter init`
 - No agent definitions — the pipeline prompts live in
   `newsletter-design.md` and the user (or Claude) interprets them
   manually each run
@@ -33,10 +33,10 @@ Problems with this approach:
 ## What the plugin changes
 
 Everything ships as one plugin. The TypeScript source that currently
-lives in collect-runner moves into the plugin's `server/` directory
+lives in cc-newsletter moves into the plugin's `server/` directory
 and is pre-built to `server/dist/`. Commands call it via
 `node ${CLAUDE_PLUGIN_ROOT}/server/dist/cli.js` instead of a globally
-installed `collect` binary. No separate npm install, no `collect init`,
+installed `cc-newsletter` binary. No separate npm install, no `cc-newsletter init`,
 no copying files around.
 
 The engine uses `claude -p` (headless CLI mode) for summarisation and
@@ -257,7 +257,7 @@ subject-specific editorial criteria.
 
 ### Source files → `server/`
 
-Everything in collect-runner's `src/` moves to `server/src/`. No logic
+Everything in cc-newsletter's `src/` moves to `server/src/`. No logic
 changes. The CLI entry point (`cli.ts`) stays — it's the same interface,
 just invoked from the plugin directory instead of a global binary.
 
@@ -300,11 +300,11 @@ If shipping pre-built `dist/`, tsx becomes a dev dependency and
 - `agents/assembler.md` — final assembly subagent
 - `agents/editor.md` — editorial pass subagent
 
-### What happens to collect-runner
+### What happens to cc-newsletter
 
-The collect-runner repo becomes the newsletter-toolkit plugin repo.
+The cc-newsletter repo becomes the newsletter-toolkit plugin repo.
 The CLI remains as an entry point (used by commands via Bash), but
-it's no longer distributed as a separate npm package. `collect init`
+it's no longer distributed as a separate npm package. `cc-newsletter init`
 and `templates/` go away — the plugin replaces them.
 
 Tests stay with the source in `server/src/`.

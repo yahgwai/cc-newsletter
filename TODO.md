@@ -1,5 +1,6 @@
 - Skill to generate newsletter
-- Skill for each of the user-facing collect commands
+- Skill for each of the user-facing cc-newsletter commands
 - Clean up docs
 - Add cron job for ingest and newsletter generation
 - Make the plugin global
+- Make data directories configurable (content/, newsletters/) so users can name them

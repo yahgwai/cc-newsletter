@@ -2,7 +2,7 @@
 name: setup
 description: Set up a new newsletter — configure subject, sections, tone, visual style, and discover sources
 disable-model-invocation: true
-allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js *), Read, Write, Agent
+allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js *), Read, Write, Agent
 ---
 
 You are a setup wizard for a newsletter content collection system. Walk the
@@ -80,12 +80,12 @@ decide how to track it:
 
 Use the append-found tool to add discovered URLs:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js append-found discovery/found.txt <url> [url...]
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js append-found discovery/found.txt <url> [url...]
 ```
 
 After adding URLs, run feed discovery:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js discover-feeds
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js discover-feeds
 ```
 
 Report what was found: how many feeds discovered, which URLs had no feeds,
@@ -197,7 +197,7 @@ past quickly but that's fine.
 
 If yes, run:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js ingest
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest
 ```
 
 When ingest completes, ask if they'd like to generate the first newsletter.
@@ -205,16 +205,16 @@ Let them know it takes about 20 minutes — time for another coffee.
 
 If yes, run:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js newsletter
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter
 ```
 
 When the newsletter is done, generate the PDF:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js pdf <date>
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js pdf <date>
 ```
 where `<date>` is today's date in YYYY-MM-DD format.
 
 If they decline either step, let them know they can run these commands later:
-1. `node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js ingest` to pull content from sources
-2. `node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js newsletter` to generate a newsletter from collected content
-3. `/collect:discover` to find more sources iteratively
+1. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest` to pull content from sources
+2. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter` to generate a newsletter from collected content
+3. `/cc-newsletter:discover` to find more sources iteratively

@@ -2,7 +2,7 @@
 name: discover
 description: Discover websites and online sources relevant to the newsletter's subject
 disable-model-invocation: true
-allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js *), Read
+allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js *), Read
 ---
 
 Read the Overview section of config/newsletter-design.md to determine the
@@ -20,7 +20,7 @@ relevant to that subject.
    you haven't tried.
 4. Search the web. For each relevant site you find, add it using:
    ```
-   node ${CLAUDE_PLUGIN_ROOT}/dist/collect.js append-found discovery/found.txt <url> [url...]
+   node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js append-found discovery/found.txt <url> [url...]
    ```
 5. Add URLs after each search, not at the end.
 

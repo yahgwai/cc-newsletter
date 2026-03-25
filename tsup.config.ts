@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: { collect: "src/cli.ts" },
+  entry: { "cc-newsletter": "src/cli.ts" },
   format: "esm",
   target: "node18",
   bundle: true,

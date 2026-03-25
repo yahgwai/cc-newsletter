@@ -29547,7 +29547,7 @@ async function syncGithubReleases(repo, baseDir = "content") {
     const res = await fetch(url, {
       headers: {
         Accept: "application/vnd.github+json",
-        "User-Agent": "collect-runner"
+        "User-Agent": "cc-newsletter"
       }
     });
     if (!res.ok) throw new Error(`GitHub API returned ${res.status} for ${repo}`);
@@ -31591,7 +31591,7 @@ import { existsSync as existsSync7, mkdirSync as mkdirSync8, writeFileSync as wr
 import { execSync } from "child_process";
 var [command, ...args] = process.argv.slice(2);
 function usage() {
-  console.log(`Usage: collect <command> [options]
+  console.log(`Usage: cc-newsletter <command> [options]
 
 Commands:
   init                          Scaffold a new project in the current directory
@@ -31630,9 +31630,9 @@ async function run() {
         console.log("wrote .gitignore");
       }
       console.log("\nProject initialized. Next steps:");
-      console.log("  1. Run /collect:setup to configure your newsletter");
-      console.log("  2. Run collect ingest to pull content from sources");
-      console.log("  3. Run /collect:discover to find more sources");
+      console.log("  1. Run /cc-newsletter:setup to configure your newsletter");
+      console.log("  2. Run cc-newsletter ingest to pull content from sources");
+      console.log("  3. Run /cc-newsletter:discover to find more sources");
       break;
     }
     case "ingest": {
@@ -31679,7 +31679,7 @@ async function run() {
     case "prepare": {
       const { prepare: prepare2 } = await Promise.resolve().then(() => (init_prepare_articles(), prepare_articles_exports));
       if (args.length < 2) {
-        console.error("Usage: collect prepare <evaluations-file> <output-dir>");
+        console.error("Usage: cc-newsletter prepare <evaluations-file> <output-dir>");
         process.exit(1);
       }
       prepare2(args[0], args[1]);
@@ -31693,7 +31693,7 @@ async function run() {
     case "append-found": {
       const { appendFound: appendFound2 } = await Promise.resolve().then(() => (init_append_found(), append_found_exports));
       if (args.length < 1) {
-        console.error("Usage: collect append-found <file> <url...>");
+        console.error("Usage: cc-newsletter append-found <file> <url...>");
         process.exit(1);
       }
       appendFound2(args[0], args.slice(1));
@@ -31702,7 +31702,7 @@ async function run() {
     case "chunk-articles": {
       const { chunkArticles: chunkArticles2 } = await Promise.resolve().then(() => (init_chunk_articles(), chunk_articles_exports));
       if (args.length < 2) {
-        console.error("Usage: collect chunk-articles <shortlist-file> <output-dir>");
+        console.error("Usage: cc-newsletter chunk-articles <shortlist-file> <output-dir>");
         process.exit(1);
       }
       chunkArticles2(args[0], args[1]);
@@ -31711,7 +31711,7 @@ async function run() {
     case "chunk-headers": {
       const { chunkHeaders: chunkHeaders2 } = await Promise.resolve().then(() => (init_chunk_headers(), chunk_headers_exports));
       if (args.length < 2) {
-        console.error("Usage: collect chunk-headers <input-list> <output-dir>");
+        console.error("Usage: cc-newsletter chunk-headers <input-list> <output-dir>");
         process.exit(1);
       }
       chunkHeaders2(args[0], args[1]);
@@ -31720,7 +31720,7 @@ async function run() {
     case "extract-includes": {
       const { extractIncludes: extractIncludes2 } = await Promise.resolve().then(() => (init_extract_includes(), extract_includes_exports));
       if (args.length < 2) {
-        console.error("Usage: collect extract-includes <output-file> <input-file-1> [input-file-2] ...");
+        console.error("Usage: cc-newsletter extract-includes <output-file> <input-file-1> [input-file-2] ...");
         process.exit(1);
       }
       extractIncludes2(args[0], args.slice(1));
@@ -31729,7 +31729,7 @@ async function run() {
     case "combine-lists": {
       const { combineLists: combineLists2 } = await Promise.resolve().then(() => (init_combine_lists(), combine_lists_exports));
       if (args.length < 2) {
-        console.error("Usage: collect combine-lists <output-file> <input-file-1> [input-file-2] ...");
+        console.error("Usage: cc-newsletter combine-lists <output-file> <input-file-1> [input-file-2] ...");
         process.exit(1);
       }
       combineLists2(args[0], args.slice(1));
@@ -31737,7 +31737,7 @@ async function run() {
     }
     case "pdf": {
       if (args.length < 1) {
-        console.error("Usage: collect pdf <date>");
+        console.error("Usage: cc-newsletter pdf <date>");
         process.exit(1);
       }
       const date = args[0];

@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import { describe, expect, it } from "vitest";
 
 describe("bundle", () => {
-  const bundle = "dist/collect.js";
+  const bundle = "dist/cc-newsletter.js";
 
   it("exists", () => {
     expect(existsSync(bundle)).toBe(true);
@@ -11,7 +11,7 @@ describe("bundle", () => {
 
   it("runs --help", () => {
     const out = execSync(`node ${bundle} --help`, { encoding: "utf-8" });
-    expect(out).toContain("Usage: collect <command>");
+    expect(out).toContain("Usage: cc-newsletter <command>");
   });
 
   it("loads every command without import errors", () => {

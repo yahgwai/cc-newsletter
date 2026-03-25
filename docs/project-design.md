@@ -1,8 +1,8 @@
-# collect-runner: Project Design
+# cc-newsletter: Project Design
 
 ## Purpose
 
-collect-runner is a content collection CLI tool for following a subject across the web. You pick a subject — e.g. "development with Claude Code" or "the Rust ecosystem" — and the system discovers sources, syncs their feeds, and processes the content.
+cc-newsletter is a content collection CLI tool for following a subject across the web. You pick a subject — e.g. "development with Claude Code" or "the Rust ecosystem" — and the system discovers sources, syncs their feeds, and processes the content.
 
 The core insight: **collection and consumption are separate problems.** Cast a wide net at collection time; filter and surface what matters later.
 
@@ -15,9 +15,9 @@ The core insight: **collection and consumption are separate problems.** Cast a w
 ## Pipeline
 
 1. **Discover** — `/discover` — agent reads the subject from `newsletter-design.md`, searches the web, finds relevant sites, appends their URLs to `discovery/found.txt`
-2. **Extract feeds** — `collect discover-feeds` — mechanically finds RSS/Atom feeds from discovered URLs
-3. **Sync** — `collect sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `collect sync-github-releases` — fetches releases from tracked GitHub repos
-4. **Summarise** — `collect summarise` — sends articles to Claude Haiku for summarisation
+2. **Extract feeds** — `cc-newsletter discover-feeds` — mechanically finds RSS/Atom feeds from discovered URLs
+3. **Sync** — `cc-newsletter sync-rss` — fetches all RSS feeds, converts entries to Markdown files; `cc-newsletter sync-github-releases` — fetches releases from tracked GitHub repos
+4. **Summarise** — `cc-newsletter summarise` — sends articles to Claude Haiku for summarisation
 
 Run `/discover` again or say "find more" to expand coverage iteratively.
 
