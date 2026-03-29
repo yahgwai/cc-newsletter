@@ -236,13 +236,13 @@ If yes, read the existing crontab with `crontab -l` to see what's already
 scheduled. Look for existing `# cc-newsletter:` markers to understand what
 other newsletters are running and when.
 
-Suggest schedules:
-- **Ingest**: daily, defaulting to 6:00 AM. If other newsletters already have
-  ingest jobs, offset by 2 hours (8:00 AM, 10:00 AM, etc.) to avoid
+Suggest default schedules:
+- **Ingest**: every 6 hours, defaulting to 0:00, 6:00, 12:00, 18:00. If other
+  newsletters already have ingest jobs, default offset by 1 hour to avoid
   overlapping API usage.
 - **Newsletter**: weekly, defaulting to Sunday at 8:00 PM. If other newsletters
-  already have newsletter jobs, offset by a day (Monday, Tuesday, etc.) since
-  generation takes ~20 minutes of heavy API usage.
+  already have newsletter jobs, default offset by a day (Monday, Tuesday, etc.)
+  since generation takes ~20 minutes of heavy API usage.
 
 Present the proposed schedule clearly and let the user adjust times, cadences,
 or days before installing.
