@@ -114,8 +114,8 @@ or back to Step 3 to adjust sections.
 ## Step 6: Visual style
 
 Now that the newsletter's content is defined, ask the user how they want it to
-look. The CSS will style the markdown → HTML/PDF rendering (typography, colors,
-layout, code blocks, blockquotes, print rules, etc.).
+look. The CSS will style the markdown → HTML rendering (typography, colors,
+layout, code blocks, blockquotes, etc.).
 
 Offer a few starting points to spark ideas:
 
@@ -154,7 +154,7 @@ The agent prompt should include:
 - Fetch any reference URLs the user provided to study their styling
 - Select fonts that match the aesthetic from Google Fonts or similar free
   sources, and include the `@import` rules in the CSS
-- Generate a complete `style.css` that covers: `@page` print rules,
+- Generate a complete `style.css` that covers:
   body/heading/paragraph typography, code blocks, blockquotes, lists, links,
   horizontal rules, and any newsletter-specific flourishes that fit the theme
 
@@ -166,7 +166,7 @@ the next step.
 
 ## Step 7: Generate artifacts
 
-Write the final configuration files to `${CLAUDE_PLUGIN_DATA}/<name>/config/`:
+Write the final configuration files to `${CLAUDE_PLUGIN_DATA}/<name>/`:
 
 ### config/newsletter-design.md
 
@@ -187,13 +187,13 @@ Write a complete newsletter design document with these sections:
    identical for every newsletter — only the section names in the filtering
    and writing guidance change.
 
-### config/feeds.json
+### feeds.json
 Write the array of discovered RSS feed URLs.
 
-### config/github-releases.json
+### github-releases.json
 Write the array of GitHub repos to track (may be empty `[]`).
 
-### config/sitemaps.json
+### sitemaps.json
 Write the array of sitemap URLs to track (may be empty `[]`).
 
 ### Print next steps
@@ -216,9 +216,9 @@ If yes, run:
 node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>
 ```
 
-When the newsletter is done, generate the PDF:
+When the newsletter is done, generate the HTML:
 ```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js pdf ${CLAUDE_PLUGIN_DATA}/<name> <date>
+node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js html ${CLAUDE_PLUGIN_DATA}/<name> <date>
 ```
 where `<date>` is today's date in YYYY-MM-DD format.
 

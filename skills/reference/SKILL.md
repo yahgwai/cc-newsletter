@@ -28,15 +28,15 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/my
 
 ### Management
 
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js list ${CLAUDE_PLUGIN_DATA}` — List existing newsletters
+- `ls ${CLAUDE_PLUGIN_DATA}` — List existing newsletters (each directory is a newsletter)
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js init <data-dir>` — Scaffold a new newsletter: creates config files and `.gitignore` in the data directory
 
 ### Content syncing
 
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest <data-dir>` — Run all sync commands then summarise new articles (sync-rss + sync-github-releases + sync-sitemaps + summarise)
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js sync-rss <data-dir>` — Fetch new articles from all RSS feeds in `config/feeds.json`
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js sync-github-releases <data-dir>` — Fetch new releases from repos in `config/github-releases.json`
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js sync-sitemaps <data-dir>` — Fetch new pages from sites in `config/sitemaps.json`
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js sync-rss <data-dir>` — Fetch new articles from all RSS feeds in `feeds.json`
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js sync-github-releases <data-dir>` — Fetch new releases from repos in `github-releases.json`
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js sync-sitemaps <data-dir>` — Fetch new pages from sites in `sitemaps.json`
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js summarise <data-dir>` — Summarise any unsummarised articles using Claude
 
 ### Newsletter pipeline
@@ -61,7 +61,7 @@ These are used internally by the newsletter pipeline but can be run standalone:
 
 ### Output
 
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js pdf <data-dir> <date>` — Convert `newsletters/YYYY-MM-DD/newsletter.md` to PDF via pandoc/weasyprint
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js html <data-dir> <date>` — Convert `newsletters/YYYY-MM-DD/newsletter.md` to HTML
 
 ### Scheduling
 

@@ -18,10 +18,9 @@ describe("bundle", () => {
 
   it("loads every command without import errors", () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "cc-newsletter-test-"));
-    mkdirSync(join(tmpDir, "config"), { recursive: true });
-    writeFileSync(join(tmpDir, "config/feeds.json"), "[]\n");
-    writeFileSync(join(tmpDir, "config/github-releases.json"), "[]\n");
-    writeFileSync(join(tmpDir, "config/sitemaps.json"), "[]\n");
+    writeFileSync(join(tmpDir, "feeds.json"), "[]\n");
+    writeFileSync(join(tmpDir, "github-releases.json"), "[]\n");
+    writeFileSync(join(tmpDir, "sitemaps.json"), "[]\n");
 
     try {
       // Each command triggers its dynamic import() path.

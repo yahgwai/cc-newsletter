@@ -191,8 +191,8 @@ interface Result {
 }
 
 export async function discoverFeeds() {
-  const existingFeeds: string[] = existsSync("config/feeds.json")
-    ? JSON.parse(readFileSync("config/feeds.json", "utf-8"))
+  const existingFeeds: string[] = existsSync("feeds.json")
+    ? JSON.parse(readFileSync("feeds.json", "utf-8"))
     : [];
   const existingFeedSet = new Set(existingFeeds);
 
@@ -253,7 +253,7 @@ export async function discoverFeeds() {
   const newFeeds = found.map((r) => r.feed!);
   if (newFeeds.length > 0) {
     const merged = [...existingFeeds, ...newFeeds];
-    writeFileSync("config/feeds.json", JSON.stringify(merged, null, 2) + "\n");
+    writeFileSync("feeds.json", JSON.stringify(merged, null, 2) + "\n");
   }
 
   writeFileSync(CHECKED_PATH, JSON.stringify(checked, null, 2) + "\n");

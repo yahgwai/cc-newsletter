@@ -1,5 +1,0 @@
-- Skill to generate newsletter
-- Skill for each of the user-facing cc-newsletter commands
-- Clean up docs
-- Make the plugin global
-- Reorganise config/ — only newsletter-design.md and style files belong there; move feed/sitemap/github JSON elsewhere

@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 
 const rawArgs = process.argv.slice(2);
 
@@ -7,7 +6,6 @@ function usage() {
   console.log(`Usage: cc-newsletter <command> <data-dir> [options]
 
 Commands:
-  list <parent-dir>             List newsletters in a directory
   init <data-dir>               Scaffold a new newsletter in the given directory
   ingest <data-dir>             Sync all sources and summarise new articles
   sync-rss                      Fetch new articles from all RSS feeds
@@ -23,7 +21,7 @@ Commands:
   chunk-headers <list> <outdir>   Chunk header list
   extract-includes <out> <files...>  Extract INCLUDE paths from decision files
   combine-lists <out> <files...>     Deduplicate and merge text files
-  pdf <date>                    Convert newsletter markdown to PDF`);
+  html <date>                   Convert newsletter markdown to HTML`);
 }
 
 async function run() {
@@ -33,22 +31,6 @@ async function run() {
   }
 
   const [command, dataDir, ...args] = rawArgs;
-
-  if (command === "list") {
-    if (!dataDir || !existsSync(dataDir)) {
-      console.log("No newsletters found.");
-      return;
-    }
-    const entries = readdirSync(dataDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name);
-    if (entries.length === 0) {
-      console.log("No newsletters found.");
-    } else {
-      for (const name of entries) console.log(name);
-    }
-    return;
-  }
 
   if (!dataDir) {
     console.error("Usage: cc-newsletter <command> <data-dir> [options]");
@@ -60,11 +42,10 @@ async function run() {
 
   switch (command) {
     case "init": {
-      mkdirSync("config", { recursive: true });
       for (const file of ["feeds.json", "github-releases.json", "sitemaps.json"]) {
-        if (!existsSync(`config/${file}`)) {
-          writeFileSync(`config/${file}`, "[]\n");
-          console.log(`wrote config/${file}`);
+        if (!existsSync(file)) {
+          writeFileSync(file, "[]\n");
+          console.log(`wrote ${file}`);
         }
       }
 
@@ -195,16 +176,33 @@ async function run() {
       break;
     }
 
-    case "pdf": {
+    case "html": {
       if (args.length < 1) {
-        console.error("Usage: cc-newsletter pdf <date>");
+        console.error("Usage: cc-newsletter html <date>");
         process.exit(1);
       }
+      const { marked } = await import("marked");
       const date = args[0];
-      execSync(
-        `pandoc newsletters/${date}/newsletter.md -t html --css config/style.css -o newsletters/${date}/newsletter.pdf --pdf-engine=weasyprint`,
-        { stdio: "inherit" }
-      );
+      const md = readFileSync(`newsletters/${date}/newsletter.md`, "utf-8");
+      const css = existsSync("config/style.css")
+        ? readFileSync("config/style.css", "utf-8")
+        : "";
+      const body = await marked(md);
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+${css}
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+      writeFileSync(`newsletters/${date}/newsletter.html`, html);
+      console.log(`wrote newsletters/${date}/newsletter.html`);
       break;
     }
 

@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { syncSitemap } from "./sync-sitemap-lib.js";
 
 export async function syncSitemaps() {
-  const sitemaps: string[] = JSON.parse(readFileSync("config/sitemaps.json", "utf-8"));
+  const sitemaps: string[] = JSON.parse(readFileSync("sitemaps.json", "utf-8"));
 
   for (const url of sitemaps) {
     try {
