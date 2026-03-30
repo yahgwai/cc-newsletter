@@ -15,7 +15,7 @@ Add the marketplace, then install the plugin:
 
 ## Quick start
 
-Run the setup wizard. It walks you through everything -- choosing a subject, defining your sections, finding sources, and scheduling automated runs.
+Run the setup wizard. It walks you through choosing a subject, defining your sections, finding sources, and scheduling automated runs.
 
 ```
 /cc-newsletter:setup
