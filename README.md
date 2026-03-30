@@ -2,6 +2,8 @@
 
 A Claude Code plugin that creates fully automated newsletters by aggregating RSS feeds. Tell it what you want to write about, and it finds sources, collects content, and produces a finished newsletter on a recurring schedule.
 
+![Example newsletter output](examples/claude-code/example.png)
+
 ## Install
 
 Add the marketplace, then install the plugin:
