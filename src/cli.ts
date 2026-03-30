@@ -20,8 +20,7 @@ Commands:
   chunk-articles <list> <outdir>  Chunk article list with full content
   chunk-headers <list> <outdir>   Chunk header list
   extract-includes <out> <files...>  Extract INCLUDE paths from decision files
-  combine-lists <out> <files...>     Deduplicate and merge text files
-  html <date>                   Convert newsletter markdown to HTML`);
+  combine-lists <out> <files...>     Deduplicate and merge text files`);
 }
 
 async function run() {
@@ -173,36 +172,6 @@ async function run() {
         process.exit(1);
       }
       combineLists(args[0], args.slice(1));
-      break;
-    }
-
-    case "html": {
-      if (args.length < 1) {
-        console.error("Usage: cc-newsletter html <date>");
-        process.exit(1);
-      }
-      const { marked } = await import("marked");
-      const date = args[0];
-      const md = readFileSync(`newsletters/${date}/newsletter.md`, "utf-8");
-      const css = existsSync("config/style.css")
-        ? readFileSync("config/style.css", "utf-8")
-        : "";
-      const body = await marked(md);
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-${css}
-</style>
-</head>
-<body>
-${body}
-</body>
-</html>`;
-      writeFileSync(`newsletters/${date}/newsletter.html`, html);
-      console.log(`wrote newsletters/${date}/newsletter.html`);
       break;
     }
 

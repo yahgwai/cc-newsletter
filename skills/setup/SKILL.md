@@ -260,12 +260,6 @@ If yes, run:
 node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>
 ```
 
-When the newsletter is done, generate the HTML:
-```
-node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js html ${CLAUDE_PLUGIN_DATA}/<name> <date>
-```
-where `<date>` is today's date in YYYY-MM-DD format.
-
 If they decline either step, let them know they can run these commands later:
 1. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name>` to pull content from sources
 2. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>` to generate a newsletter from collected content

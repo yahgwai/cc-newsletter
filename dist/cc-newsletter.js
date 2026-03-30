@@ -30287,1331 +30287,7 @@ Example output:
   }
 });
 
-// src/util.ts
-import { writeFileSync as writeFileSync5, mkdirSync as mkdirSync4, readdirSync as readdirSync2, unlinkSync } from "fs";
-import { join as join3 } from "path";
-function wordCount(text) {
-  return text.split(/\s+/).filter(Boolean).length;
-}
-function chunkAndWrite(entries, outputDir, wordsPerChunk = 3e4) {
-  const chunks = [];
-  let current = "";
-  let currentWords = 0;
-  for (const entry of entries) {
-    const words = wordCount(entry);
-    if (currentWords + words > wordsPerChunk && current) {
-      chunks.push(current);
-      current = "";
-      currentWords = 0;
-    }
-    current += entry + "\n";
-    currentWords += words;
-  }
-  if (current.trim()) {
-    chunks.push(current);
-  }
-  mkdirSync4(outputDir, { recursive: true });
-  for (const f of readdirSync2(outputDir)) {
-    if (/^chunk-\d+\.md$/.test(f)) unlinkSync(join3(outputDir, f));
-  }
-  for (let i = 0; i < chunks.length; i++) {
-    const path2 = join3(outputDir, `chunk-${i + 1}.md`);
-    writeFileSync5(path2, chunks[i]);
-  }
-  return chunks.length;
-}
-var FEEDS_DIR;
-var init_util = __esm({
-  "src/util.ts"() {
-    "use strict";
-    FEEDS_DIR = "content";
-  }
-});
-
-// src/recent-headers.ts
-var recent_headers_exports = {};
-__export(recent_headers_exports, {
-  recentHeaders: () => recentHeaders
-});
-import { readFileSync as readFileSync6, readdirSync as readdirSync3, statSync as statSync3 } from "fs";
-import { join as join4 } from "path";
-function today() {
-  const d = /* @__PURE__ */ new Date();
-  return d.toISOString().slice(0, 10);
-}
-function parseCliArgs(argv) {
-  let days = 7;
-  let date = today();
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--date" && argv[i + 1]) {
-      date = argv[i + 1];
-      i++;
-    } else if (!argv[i].startsWith("--")) {
-      days = parseInt(argv[i], 10);
-    }
-  }
-  return { days, outputDir: `newsletters/${date}` };
-}
-function parseHeaderYaml(content) {
-  const fields = {};
-  for (const line of content.split("\n")) {
-    const match = line.match(/^(\w+):\s*"(.*)"\s*$/);
-    if (match) {
-      fields[match[1]] = match[2];
-    }
-  }
-  return fields;
-}
-function isWithinDays(dateStr, days) {
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return false;
-  const cutoff = /* @__PURE__ */ new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  return date >= cutoff;
-}
-function hasSummary(summary) {
-  if (!summary) return false;
-  if (summary === "No content.") return false;
-  return true;
-}
-function collectArticles(days) {
-  const articles = [];
-  const sources = readdirSync3(FEEDS_DIR);
-  for (const source of sources) {
-    const sourceDir = join4(FEEDS_DIR, source);
-    if (!statSync3(sourceDir).isDirectory()) continue;
-    const files = readdirSync3(sourceDir);
-    const headers = files.filter((f) => f.endsWith("-header.yaml"));
-    for (const headerFile of headers) {
-      const headerPath = join4(sourceDir, headerFile);
-      const raw = readFileSync6(headerPath, "utf-8");
-      const fields = parseHeaderYaml(raw);
-      if (!isWithinDays(fields.date, days)) continue;
-      if (!hasSummary(fields.summary)) continue;
-      articles.push({
-        headerPath: join4(source, headerFile),
-        source,
-        title: fields.title || "Untitled",
-        link: fields.link || "",
-        date: fields.date,
-        summary: fields.summary
-      });
-    }
-  }
-  articles.sort((a, b2) => new Date(b2.date).getTime() - new Date(a.date).getTime());
-  return articles;
-}
-function formatArticle(article) {
-  return [
-    `# ${article.title}`,
-    `Header: ${article.headerPath}`,
-    `Source: ${article.source}`,
-    `Date: ${article.date}`,
-    `Link: ${article.link}`,
-    "",
-    `**Summary:** ${article.summary}`,
-    "",
-    "---",
-    ""
-  ].join("\n");
-}
-function recentHeaders(args) {
-  const { days, outputDir } = parseCliArgs(args);
-  const articles = collectArticles(days);
-  const entries = articles.map(formatArticle);
-  const chunkCount = chunkAndWrite(entries, outputDir);
-  console.log(outputDir);
-  console.log(`Collected ${articles.length} articles from the last ${days} days`);
-  console.log(`Written to ${chunkCount} chunks in ${outputDir}/`);
-}
-var init_recent_headers = __esm({
-  "src/recent-headers.ts"() {
-    "use strict";
-    init_util();
-  }
-});
-
-// src/chunk-articles.ts
-var chunk_articles_exports = {};
-__export(chunk_articles_exports, {
-  chunkArticles: () => chunkArticles
-});
-import { readFileSync as readFileSync7 } from "fs";
-import { join as join5 } from "path";
-function chunkArticles(inputFile, outputDir) {
-  const headerPaths = readFileSync7(inputFile, "utf-8").split("\n").map((l) => l.replace(/\s*\|.*$/, "").trim()).filter((l) => l && !l.startsWith("\u2192"));
-  const entries = [];
-  for (const headerPath of headerPaths) {
-    const headerFullPath = join5(FEEDS_DIR, headerPath);
-    const mdPath = join5(FEEDS_DIR, headerPath.replace("-header.yaml", ".md"));
-    let header;
-    try {
-      header = readFileSync7(headerFullPath, "utf-8").trim();
-    } catch {
-      continue;
-    }
-    let article = "";
-    try {
-      article = readFileSync7(mdPath, "utf-8").trim();
-    } catch {
-    }
-    entries.push(
-      [`Header: ${headerPath}`, header, "", article, "", "---", ""].join("\n")
-    );
-  }
-  const chunkCount = chunkAndWrite(entries, outputDir);
-  console.log(`Chunked ${headerPaths.length} articles into ${chunkCount} chunks in ${outputDir}/`);
-}
-var init_chunk_articles = __esm({
-  "src/chunk-articles.ts"() {
-    "use strict";
-    init_util();
-    if (process.argv[1]?.includes("chunk-articles")) {
-      if (process.argv[2] && process.argv[3]) {
-        chunkArticles(process.argv[2], process.argv[3]);
-      } else {
-        console.error("Usage: chunk-articles.ts <shortlist-file> <output-dir>");
-        process.exit(1);
-      }
-    }
-  }
-});
-
-// src/prepare-articles.ts
-var prepare_articles_exports = {};
-__export(prepare_articles_exports, {
-  prepare: () => prepare
-});
-import { readFileSync as readFileSync8, writeFileSync as writeFileSync6, mkdirSync as mkdirSync5 } from "fs";
-import { join as join6 } from "path";
-function prepare(evaluationsFile, outputDir) {
-  const content = readFileSync8(evaluationsFile, "utf-8");
-  const entries = [];
-  const blocks = content.split(/^(?:---|```)$/m);
-  for (const block of blocks) {
-    const text = block.trim();
-    if (!text) continue;
-    const headerMatch = text.match(/^#{0,3}\s*Header:\s*(.+)$/m);
-    if (!headerMatch) continue;
-    const headerPath = headerMatch[1].trim();
-    const decisionMatch = text.match(
-      /(?:\*\*Decision:\*\*\s*|^)(INCLUDE|EXCLUDE)/m
-    );
-    if (!decisionMatch || decisionMatch[1] !== "INCLUDE") continue;
-    let section = "Unknown";
-    const sectionMatch = text.match(/\*\*Section:\*\*\s*(.+)$/m);
-    const inlineMatch = text.match(/^INCLUDE\s*[—–-]\s*(.+)$/m);
-    if (sectionMatch) {
-      section = sectionMatch[1].trim();
-    } else if (inlineMatch) {
-      section = inlineMatch[1].trim();
-    }
-    let summary = "";
-    const summaryMatch = text.match(/\*\*Summary:\*\*\s*([\s\S]+?)$/m);
-    if (summaryMatch) {
-      summary = summaryMatch[1].trim();
-    }
-    const mdPath = join6(FEEDS_DIR, headerPath.replace("-header.yaml", ".md"));
-    let articleWords = 0;
-    try {
-      articleWords = wordCount(readFileSync8(mdPath, "utf-8"));
-    } catch {
-    }
-    entries.push({
-      headerPath,
-      section,
-      summary,
-      articleWords
-    });
-  }
-  mkdirSync5(outputDir, { recursive: true });
-  const includesPath = join6(outputDir, "includes.txt");
-  writeFileSync6(
-    includesPath,
-    entries.map((e) => e.headerPath).join("\n") + "\n"
-  );
-  let totalWords = 0;
-  for (const entry of entries) {
-    totalWords += entry.articleWords;
-  }
-  if (totalWords <= AFFINITY_THRESHOLD) {
-    const chunksDir = join6(outputDir, "single");
-    chunkArticles(includesPath, chunksDir);
-    console.log(
-      `
-${entries.length} articles, ${totalWords} words \u2014 chunked to ${chunksDir}/`
-    );
-    return { mode: "single", totalWords };
-  } else {
-    const groups = /* @__PURE__ */ new Map();
-    for (const entry of entries) {
-      const primarySection = entry.section.split(";")[0].trim();
-      const key = SECTION_KEY_MAP[primarySection] || "other";
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(entry.headerPath);
-    }
-    for (const [key, paths] of groups) {
-      const groupFile = join6(outputDir, `group-${key}.txt`);
-      writeFileSync6(groupFile, paths.join("\n") + "\n");
-      const groupDir = join6(outputDir, `group-${key}`);
-      chunkArticles(groupFile, groupDir);
-    }
-    console.log(
-      `
-${entries.length} articles, ${totalWords} words \u2014 grouped into ${groups.size} sections`
-    );
-    return { mode: "grouped", totalWords };
-  }
-}
-var AFFINITY_THRESHOLD, SECTION_KEY_MAP;
-var init_prepare_articles = __esm({
-  "src/prepare-articles.ts"() {
-    "use strict";
-    init_util();
-    init_chunk_articles();
-    AFFINITY_THRESHOLD = 5e4;
-    SECTION_KEY_MAP = {
-      "New Features": "features",
-      "Security & Bugs": "security",
-      "Article of the Week": "article",
-      "Techniques & Workflows": "techniques",
-      "What Are They Talking About & What Are They Building?": "building",
-      "The Wider World": "wider"
-    };
-    if (process.argv[1]?.includes("prepare-articles")) {
-      if (process.argv[2] && process.argv[3]) {
-        prepare(process.argv[2], process.argv[3]);
-      } else {
-        console.error(
-          "Usage: prepare-articles.ts <evaluations-file> <output-dir>"
-        );
-        process.exit(1);
-      }
-    }
-  }
-});
-
-// src/extract-includes.ts
-var extract_includes_exports = {};
-__export(extract_includes_exports, {
-  extractIncludes: () => extractIncludes
-});
-import { readFileSync as readFileSync9, writeFileSync as writeFileSync7 } from "fs";
-function extractIncludes(outputFile, inputFiles) {
-  const paths = /* @__PURE__ */ new Set();
-  for (const file of inputFiles) {
-    const content = readFileSync9(file, "utf-8");
-    let currentHeader = null;
-    for (const line of content.split("\n")) {
-      const headerMatch = line.match(/^## Header:\s*(.+)/);
-      if (headerMatch) {
-        currentHeader = headerMatch[1].trim();
-        continue;
-      }
-      const decisionMatch = line.match(/^\*\*Decision:\*\*\s*(.+)/);
-      if (decisionMatch && currentHeader) {
-        if (decisionMatch[1].trim().toUpperCase() === "INCLUDE") {
-          paths.add(currentHeader);
-        }
-        currentHeader = null;
-      }
-    }
-  }
-  const sorted = [...paths].sort();
-  writeFileSync7(outputFile, sorted.join("\n") + "\n");
-  console.log(
-    `Extracted ${sorted.length} INCLUDE paths from ${inputFiles.length} files \u2192 ${outputFile}`
-  );
-}
-var init_extract_includes = __esm({
-  "src/extract-includes.ts"() {
-    "use strict";
-    if (process.argv[1]?.includes("extract-includes")) {
-      if (process.argv[2] && process.argv[3]) {
-        extractIncludes(process.argv[2], process.argv.slice(3));
-      } else {
-        console.error(
-          "Usage: extract-includes.ts <output-file> <input-file-1> [input-file-2] ..."
-        );
-        process.exit(1);
-      }
-    }
-  }
-});
-
-// src/chunk-headers.ts
-var chunk_headers_exports = {};
-__export(chunk_headers_exports, {
-  chunkHeaders: () => chunkHeaders
-});
-import { readFileSync as readFileSync10 } from "fs";
-import { join as join7 } from "path";
-function chunkHeaders(inputFile, outputDir) {
-  const paths = readFileSync10(inputFile, "utf-8").split("\n").map((l) => l.trim()).filter(Boolean);
-  const entries = [];
-  for (const headerPath of paths) {
-    const fullPath = join7(FEEDS_DIR, headerPath);
-    let content;
-    try {
-      content = readFileSync10(fullPath, "utf-8");
-    } catch {
-      continue;
-    }
-    entries.push(
-      [`Header: ${headerPath}`, content.trim(), "", "---", ""].join("\n")
-    );
-  }
-  const chunkCount = chunkAndWrite(entries, outputDir);
-  console.log(`Chunked ${paths.length} headers into ${chunkCount} chunks in ${outputDir}/`);
-}
-var init_chunk_headers = __esm({
-  "src/chunk-headers.ts"() {
-    "use strict";
-    init_util();
-    if (process.argv[1]?.includes("chunk-headers")) {
-      if (process.argv[2] && process.argv[3]) {
-        chunkHeaders(process.argv[2], process.argv[3]);
-      } else {
-        console.error("Usage: chunk-headers.ts <input-list> <output-dir>");
-        process.exit(1);
-      }
-    }
-  }
-});
-
-// src/newsletter.ts
-var newsletter_exports = {};
-__export(newsletter_exports, {
-  newsletter: () => newsletter
-});
-import {
-  readFileSync as readFileSync11,
-  writeFileSync as writeFileSync8,
-  mkdirSync as mkdirSync6,
-  readdirSync as readdirSync4,
-  existsSync as existsSync4,
-  unlinkSync as unlinkSync2,
-  rmSync
-} from "fs";
-import { join as join8 } from "path";
-import { spawn as spawn2 } from "child_process";
-async function callClaude2(systemPrompt, userPrompt, model, label) {
-  const fullText = systemPrompt + "\n" + userPrompt;
-  const tokens = await countTokens(fullText, true);
-  if (tokens != null) {
-    const tag = label ? ` [${label}]` : "";
-    console.error(`      ${tag} ${tokens.toLocaleString()} input tokens`);
-  }
-  return new Promise((resolve, reject) => {
-    const env = { ...process.env };
-    delete env.CLAUDECODE;
-    const proc = spawn2(
-      "claude",
-      ["-p", "--model", model, "--allowedTools", "", "--system-prompt", systemPrompt + NO_TOOLS],
-      { stdio: ["pipe", "pipe", "pipe"], env }
-    );
-    const timer = setTimeout(() => {
-      proc.kill();
-      const detail = stderr || stdout.slice(0, 1e3) || "(no output)";
-      reject(new Error(`claude timed out after ${CALL_TIMEOUT_MS / 1e3}s: ${detail}`));
-    }, CALL_TIMEOUT_MS);
-    proc.stdin.write(userPrompt);
-    proc.stdin.end();
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    proc.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    proc.on("error", (err) => {
-      clearTimeout(timer);
-      reject(new Error(`claude failed to spawn: ${err.message}`));
-    });
-    proc.on("close", (code) => {
-      clearTimeout(timer);
-      if (code !== 0) {
-        const detail = stderr || stdout.slice(0, 1e3) || "(no output)";
-        reject(new Error(`claude exited with code ${code}: ${detail}`));
-        return;
-      }
-      resolve(stdout);
-    });
-  });
-}
-function makeThrottle2() {
-  let next2 = Date.now();
-  return async () => {
-    const now = Date.now();
-    const wait = next2 - now;
-    next2 = Math.max(now, next2) + REQUEST_INTERVAL_MS2;
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  };
-}
-async function runPool(items, parallel, fn) {
-  let nextIndex = 0;
-  async function worker() {
-    while (nextIndex < items.length) {
-      const idx = nextIndex++;
-      await fn(items[idx], idx);
-    }
-  }
-  const workers = Array.from(
-    { length: Math.min(parallel, items.length) },
-    () => worker()
-  );
-  await Promise.all(workers);
-}
-function writeProgress(runDir, progress) {
-  writeFileSync8(join8(runDir, "progress.json"), JSON.stringify(progress) + "\n");
-}
-function countFiles(dir, pattern) {
-  if (!existsSync4(dir)) return 0;
-  return readdirSync4(dir).filter((f) => pattern.test(f)).length;
-}
-function wipeFiles(dir, pattern) {
-  if (!existsSync4(dir)) return;
-  for (const f of readdirSync4(dir)) {
-    if (pattern.test(f)) unlinkSync2(join8(dir, f));
-  }
-}
-async function newsletter(args) {
-  let date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-  let days = 7;
-  let force = false;
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--date" && args[i + 1]) {
-      date = args[i + 1];
-      i++;
-    } else if (args[i] === "--days" && args[i + 1]) {
-      days = parseInt(args[i + 1], 10);
-      i++;
-    } else if (args[i] === "--force") {
-      force = true;
-    }
-  }
-  const runDir = `newsletters/${date}`;
-  mkdirSync6(runDir, { recursive: true });
-  const designDoc = readFileSync11("config/newsletter-design.md", "utf-8");
-  const throttle = makeThrottle2();
-  const totalStart = performance.now();
-  const draftPath = join8(runDir, "draft.md");
-  if (!force && countFiles(runDir, /^chunk-\d+\.md$/) > 0) {
-    console.error(`[1/7] Collecting recent headers... skipped (cached)`);
-  } else {
-    console.error(`[1/7] Collecting recent headers...`);
-    writeProgress(runDir, { step: 1, stepName: "collect", stepsTotal: 7 });
-    recentHeaders([String(days), "--date", date]);
-  }
-  const chunkFiles = readdirSync4(runDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
-  console.error(`      ${chunkFiles.length} chunks`);
-  if (chunkFiles.length === 0) {
-    console.error("No articles found. Nothing to do.");
-    return;
-  }
-  const relevantPath = join8(runDir, "relevant.txt");
-  if (!force && existsSync4(relevantPath) && countFiles(runDir, /^filter-\d+\.md$/) === chunkFiles.length) {
-    console.error(`[2/7] Filtering for relevance... skipped (cached)`);
-  } else {
-    console.error(`[2/7] Filtering for relevance...`);
-    wipeFiles(runDir, /^filter-\d+\.md$/);
-    if (existsSync4(relevantPath)) unlinkSync2(relevantPath);
-    const filterResults = [];
-    async function filterChunk(chunkFile, idx) {
-      await throttle();
-      const chunkContent = readFileSync11(join8(runDir, chunkFile), "utf-8");
-      const userPrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== ARTICLE HEADERS ===
-${chunkContent}`;
-      const start = performance.now();
-      try {
-        const result = await callClaude2(FILTER_SYSTEM_PROMPT, userPrompt, "opus", `filter ${idx + 1}/${chunkFiles.length}`);
-        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
-        const outPath = join8(runDir, `filter-${idx + 1}.md`);
-        writeFileSync8(outPath, result);
-        filterResults.push(outPath);
-        console.error(
-          `      filter ${idx + 1}/${chunkFiles.length} \u2713 (${elapsed}s)`
-        );
-        writeProgress(runDir, {
-          step: 2,
-          stepName: "filter",
-          stepsTotal: 7,
-          chunksTotal: chunkFiles.length,
-          chunksDone: filterResults.length
-        });
-      } catch (err) {
-        console.error(
-          `      filter ${idx + 1}/${chunkFiles.length} \u2717 ${err}`
-        );
-      }
-    }
-    await runPool(
-      chunkFiles,
-      PARALLEL,
-      (file, idx) => filterChunk(file, idx)
-    );
-    extractIncludes(relevantPath, filterResults.sort());
-  }
-  const relevantCount = readFileSync11(relevantPath, "utf-8").split("\n").filter(Boolean).length;
-  console.error(`      ${relevantCount} included \u2192 relevant.txt`);
-  if (relevantCount === 0) {
-    console.error("No relevant articles after filtering. Nothing to do.");
-    return;
-  }
-  const prioritiseDir = join8(runDir, "prioritise");
-  const shortlistPath = join8(runDir, "shortlist.txt");
-  const prioritiseChunkCount = countFiles(prioritiseDir, /^chunk-\d+\.md$/);
-  const prioritiseResultCount = countFiles(runDir, /^prioritise-\d+\.md$/);
-  if (!force && existsSync4(shortlistPath) && prioritiseChunkCount > 0 && prioritiseResultCount === prioritiseChunkCount) {
-    console.error(`[3/7] Prioritising for deep reading... skipped (cached)`);
-  } else {
-    console.error(`[3/7] Prioritising for deep reading...`);
-    wipeFiles(runDir, /^prioritise-\d+\.md$/);
-    if (existsSync4(shortlistPath)) unlinkSync2(shortlistPath);
-    if (existsSync4(prioritiseDir)) rmSync(prioritiseDir, { recursive: true });
-    chunkHeaders(relevantPath, prioritiseDir);
-    const prioritiseChunks = readdirSync4(prioritiseDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
-    const prioritiseResults = [];
-    async function prioritiseChunk(chunkFile, idx) {
-      await throttle();
-      const chunkContent = readFileSync11(join8(prioritiseDir, chunkFile), "utf-8");
-      const userPrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== ARTICLE HEADERS ===
-${chunkContent}`;
-      const start = performance.now();
-      try {
-        const result = await callClaude2(
-          PRIORITISE_SYSTEM_PROMPT,
-          userPrompt,
-          "opus",
-          `prioritise ${idx + 1}/${prioritiseChunks.length}`
-        );
-        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
-        const outPath = join8(runDir, `prioritise-${idx + 1}.md`);
-        writeFileSync8(outPath, result);
-        prioritiseResults.push(outPath);
-        console.error(
-          `      prioritise ${idx + 1}/${prioritiseChunks.length} \u2713 (${elapsed}s)`
-        );
-        writeProgress(runDir, {
-          step: 3,
-          stepName: "prioritise",
-          stepsTotal: 7,
-          chunksTotal: prioritiseChunks.length,
-          chunksDone: prioritiseResults.length
-        });
-      } catch (err) {
-        console.error(
-          `      prioritise ${idx + 1}/${prioritiseChunks.length} \u2717 ${err}`
-        );
-      }
-    }
-    await runPool(
-      prioritiseChunks,
-      PARALLEL,
-      (file, idx) => prioritiseChunk(file, idx)
-    );
-    extractIncludes(shortlistPath, prioritiseResults.sort());
-  }
-  const shortlistCount = readFileSync11(shortlistPath, "utf-8").split("\n").filter(Boolean).length;
-  console.error(`      ${shortlistCount} shortlisted \u2192 shortlist.txt`);
-  if (shortlistCount === 0) {
-    console.error("No articles shortlisted. Nothing to do.");
-    return;
-  }
-  const deepReadDir = join8(runDir, "deep-read");
-  const evaluationsPath = join8(runDir, "evaluations.md");
-  const deepReadChunkCount = countFiles(deepReadDir, /^chunk-\d+\.md$/);
-  const evaluationResultCount = countFiles(runDir, /^evaluations-\d+\.md$/);
-  if (!force && existsSync4(evaluationsPath) && deepReadChunkCount > 0 && evaluationResultCount === deepReadChunkCount) {
-    console.error(`[4/7] Deep reading and evaluating... skipped (cached)`);
-  } else {
-    console.error(`[4/7] Deep reading and evaluating...`);
-    wipeFiles(runDir, /^evaluations-\d+\.md$/);
-    if (existsSync4(evaluationsPath)) unlinkSync2(evaluationsPath);
-    if (existsSync4(deepReadDir)) rmSync(deepReadDir, { recursive: true });
-    chunkArticles(shortlistPath, deepReadDir);
-    const deepReadChunks = readdirSync4(deepReadDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
-    const evaluationFiles = [];
-    async function deepReadChunk(chunkFile, idx) {
-      await throttle();
-      const chunkContent = readFileSync11(join8(deepReadDir, chunkFile), "utf-8");
-      const userPrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== ARTICLES ===
-${chunkContent}`;
-      const start = performance.now();
-      try {
-        const result = await callClaude2(
-          DEEP_READ_SYSTEM_PROMPT,
-          userPrompt,
-          "opus",
-          `deep-read ${idx + 1}/${deepReadChunks.length}`
-        );
-        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
-        const outPath = join8(runDir, `evaluations-${idx + 1}.md`);
-        writeFileSync8(outPath, result);
-        evaluationFiles.push(outPath);
-        console.error(
-          `      deep-read ${idx + 1}/${deepReadChunks.length} \u2713 (${elapsed}s)`
-        );
-        writeProgress(runDir, {
-          step: 4,
-          stepName: "deep-read",
-          stepsTotal: 7,
-          chunksTotal: deepReadChunks.length,
-          chunksDone: evaluationFiles.length
-        });
-      } catch (err) {
-        console.error(
-          `      deep-read ${idx + 1}/${deepReadChunks.length} \u2717 ${err}`
-        );
-      }
-    }
-    await runPool(
-      deepReadChunks,
-      PARALLEL,
-      (file, idx) => deepReadChunk(file, idx)
-    );
-    const evaluationsContent = evaluationFiles.sort().map((f) => readFileSync11(f, "utf-8")).join("\n---\n\n");
-    writeFileSync8(evaluationsPath, evaluationsContent);
-    console.error(`      evaluations written \u2192 evaluations.md`);
-  }
-  const newsletterInputDir = join8(runDir, "newsletter-input");
-  const singleDirExists = existsSync4(join8(newsletterInputDir, "single"));
-  const hasGroupDirs = existsSync4(newsletterInputDir) && readdirSync4(newsletterInputDir, { withFileTypes: true }).some(
-    (f) => f.isDirectory() && f.name.startsWith("group-")
-  );
-  let mode;
-  if (!force && (singleDirExists || hasGroupDirs)) {
-    console.error(`[5/7] Preparing article content... skipped (cached)`);
-    mode = singleDirExists ? "single" : "grouped";
-  } else {
-    console.error(`[5/7] Preparing article content...`);
-    writeProgress(runDir, { step: 5, stepName: "prepare", stepsTotal: 7 });
-    if (existsSync4(newsletterInputDir))
-      rmSync(newsletterInputDir, { recursive: true });
-    const prepareResult = prepare(evaluationsPath, newsletterInputDir);
-    mode = prepareResult.mode;
-    console.error(
-      `      ${prepareResult.mode} mode, ${prepareResult.totalWords} words`
-    );
-  }
-  const newsletterPath = join8(runDir, "newsletter.md");
-  const evaluations = readFileSync11(evaluationsPath, "utf-8");
-  if (!force && existsSync4(draftPath)) {
-    console.error(`[6/7] Writing newsletter... skipped (cached)`);
-  } else if (mode === "single") {
-    console.error(`[6/7] Writing newsletter...`);
-    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 7 });
-    const singleDir = join8(newsletterInputDir, "single");
-    const articleChunks = readdirSync4(singleDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
-    const articlesContent = articleChunks.map((f) => readFileSync11(join8(singleDir, f), "utf-8")).join("\n");
-    const userPrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== EVALUATIONS ===
-${evaluations}
-
-=== ARTICLES ===
-${articlesContent}`;
-    await throttle();
-    const start = performance.now();
-    const result = await callClaude2(
-      WRITE_SINGLE_SYSTEM_PROMPT,
-      userPrompt,
-      "opus",
-      "write-single"
-    );
-    const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
-    writeFileSync8(draftPath, result);
-    console.error(`      written in ${elapsed}s \u2192 ${draftPath}`);
-  } else {
-    console.error(`[6/7] Writing newsletter...`);
-    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 7 });
-    const groupDirs = readdirSync4(newsletterInputDir, { withFileTypes: true }).filter((f) => f.isDirectory() && f.name.startsWith("group-")).map((f) => f.name).sort();
-    const tasks = [];
-    for (const groupDir of groupDirs) {
-      const key = groupDir.replace("group-", "");
-      const sectionName = SECTION_NAME_MAP[key] || key;
-      const groupPath = join8(newsletterInputDir, groupDir);
-      const groupChunks = readdirSync4(groupPath).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
-      for (let i = 0; i < groupChunks.length; i++) {
-        tasks.push({
-          key,
-          sectionName,
-          chunkFile: join8(groupPath, groupChunks[i]),
-          chunkIndex: i,
-          totalChunks: groupChunks.length
-        });
-      }
-    }
-    const expectedSections = tasks.map((task) => {
-      const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
-      return `section-${task.key}${suffix}.md`;
-    });
-    const allSectionsExist = expectedSections.every(
-      (f) => existsSync4(join8(runDir, f))
-    );
-    if (force || !allSectionsExist) {
-      wipeFiles(runDir, /^section-.*\.md$/);
-      async function writeSectionDraft(task) {
-        await throttle();
-        const chunkContent = readFileSync11(task.chunkFile, "utf-8");
-        const systemPrompt = WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE.replace(
-          "{SECTION}",
-          task.sectionName
-        );
-        const userPrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== EVALUATIONS ===
-${evaluations}
-
-=== ARTICLES ===
-${chunkContent}`;
-        const start = performance.now();
-        const result = await callClaude2(systemPrompt, userPrompt, "opus", `section ${task.key} ${task.chunkIndex + 1}/${task.totalChunks}`);
-        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
-        const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
-        const outPath = join8(runDir, `section-${task.key}${suffix}.md`);
-        writeFileSync8(outPath, result);
-        console.error(
-          `      section ${task.key} chunk ${task.chunkIndex + 1}/${task.totalChunks} \u2713 (${elapsed}s)`
-        );
-      }
-      await runPool(tasks, PARALLEL, (task) => writeSectionDraft(task));
-    } else {
-      console.error(`      section drafts cached, skipping to assembly`);
-    }
-    console.error(`      assembling...`);
-    const sectionDraftFiles = readdirSync4(runDir).filter((f) => f.startsWith("section-") && f.endsWith(".md")).sort();
-    const draftsContent = sectionDraftFiles.map((f) => `=== ${f} ===
-${readFileSync11(join8(runDir, f), "utf-8")}`).join("\n\n");
-    const assemblePrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== EVALUATIONS ===
-${evaluations}
-
-=== SECTION DRAFTS ===
-${draftsContent}`;
-    await throttle();
-    const assembleStart = performance.now();
-    const assembled = await callClaude2(
-      ASSEMBLE_SYSTEM_PROMPT,
-      assemblePrompt,
-      "opus",
-      "assemble"
-    );
-    const assembleElapsed = ((performance.now() - assembleStart) / 1e3).toFixed(0);
-    writeFileSync8(draftPath, assembled);
-    console.error(
-      `      assembled in ${assembleElapsed}s \u2192 ${draftPath}`
-    );
-  }
-  if (!force && existsSync4(newsletterPath)) {
-    console.error(`[7/7] Editorial pass... skipped (cached)`);
-  } else {
-    console.error(`[7/7] Editorial pass...`);
-    writeProgress(runDir, { step: 7, stepName: "editorial", stepsTotal: 7 });
-    const draftContent = readFileSync11(draftPath, "utf-8");
-    const editorialPrompt = `=== NEWSLETTER DESIGN ===
-${designDoc}
-
-=== DRAFT ===
-${draftContent}`;
-    await throttle();
-    const editorialStart = performance.now();
-    const editorialOutput = await callClaude2(
-      EDITORIAL_SYSTEM_PROMPT,
-      editorialPrompt,
-      "opus",
-      "editorial"
-    );
-    const editorialElapsed = ((performance.now() - editorialStart) / 1e3).toFixed(0);
-    const revisedSplit = editorialOutput.split("=== REVISED NEWSLETTER ===");
-    if (revisedSplit.length >= 2) {
-      const changesSplit = revisedSplit[0].split("=== EDITORIAL CHANGES ===");
-      if (changesSplit.length >= 2) {
-        writeFileSync8(
-          join8(runDir, "editorial-changes.md"),
-          changesSplit[1].trim()
-        );
-      }
-      writeFileSync8(newsletterPath, revisedSplit[1].trim());
-    } else {
-      writeFileSync8(newsletterPath, editorialOutput);
-    }
-    console.error(
-      `      editorial pass done (${editorialElapsed}s) \u2192 ${newsletterPath}`
-    );
-  }
-  writeProgress(runDir, { step: 7, stepName: "done", stepsTotal: 7 });
-  const totalElapsed = ((performance.now() - totalStart) / 1e3).toFixed(0);
-  console.error(`
-Done in ${totalElapsed}s \u2192 ${newsletterPath}`);
-}
-var PARALLEL, REQUEST_INTERVAL_MS2, CALL_TIMEOUT_MS, NO_TOOLS, FILTER_SYSTEM_PROMPT, PRIORITISE_SYSTEM_PROMPT, DEEP_READ_SYSTEM_PROMPT, WRITE_SINGLE_SYSTEM_PROMPT, WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE, ASSEMBLE_SYSTEM_PROMPT, EDITORIAL_SYSTEM_PROMPT, SECTION_NAME_MAP;
-var init_newsletter = __esm({
-  "src/newsletter.ts"() {
-    "use strict";
-    init_recent_headers();
-    init_prepare_articles();
-    init_extract_includes();
-    init_chunk_headers();
-    init_chunk_articles();
-    init_count_tokens();
-    PARALLEL = 10;
-    REQUEST_INTERVAL_MS2 = 2500;
-    CALL_TIMEOUT_MS = 6e5;
-    NO_TOOLS = `
-
-Do not use any tools. Do not search the web. Do not read or write files. Output your complete response as text.`;
-    FILTER_SYSTEM_PROMPT = `You will receive a newsletter design document and a batch of article
-headers with summaries.
-
-Review every header and decide whether it could be relevant to any
-section of the newsletter \u2014 not just Claude Code content, but also
-anything that might fit in The Wider World, Security & Bugs,
-Techniques, or community discussion.
-
-Write a decision for every header using this format, separated by ---:
-
-## Header: path/to/header.yaml
-**Decision:** INCLUDE
-**Reason:** Covers a new Claude Code CLI feature relevant to New Features section
----
-## Header: path/to/other.yaml
-**Decision:** EXCLUDE
-**Reason:** Generic AI industry news, not specific enough for any section
----
-
-This is a filtering pass \u2014 cast a wide net. When in doubt, include it.`;
-    PRIORITISE_SYSTEM_PROMPT = `You will receive a newsletter design document and a batch of article
-headers that passed an initial relevance filter.
-
-Select the headers that are most worth reading in full \u2014 based on how
-interesting the topic is and how credible or high-quality the source
-appears.
-
-Write a decision for every header using this format, separated by ---:
-
-## Header: path/to/header.yaml
-**Decision:** INCLUDE
-**Reason:** High-quality source with concrete workflow details worth deep reading
----
-## Header: path/to/other.yaml
-**Decision:** EXCLUDE
-**Reason:** Superficial listicle, unlikely to add substance on deeper read
----
-
-Err on the side of including something if it looks promising.`;
-    DEEP_READ_SYSTEM_PROMPT = `You will receive a newsletter design document and a batch of full
-articles.
-
-Read every article in full and write an evaluation using this format,
-separated by ---:
-
-## Header: path/to/header.yaml
-**Decision:** INCLUDE or EXCLUDE
-**Section:** Section Name
-**Summary:** 2-3 sentences on the substance \u2014 what you actually learned
-from reading it, not just the header summary
----
-
-For articles that should NOT be included, still list them with
-**Section:** N/A and a one-line summary explaining the exclusion so
-the decision is auditable.
-
-Section names: New Features, Security & Bugs, Article of the Week,
-Techniques & Workflows, What Are They Talking About & What Are They
-Building?, The Wider World
-
-For articles that fit multiple sections, use semicolons:
-**Section:** New Features; Security & Bugs
-Put the primary section first.`;
-    WRITE_SINGLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes for
-all articles, and the full article texts.
-
-Write the complete newsletter following the design doc \u2014 all sections,
-in order, with citations, in the correct tone. Stay within the word
-budget (max 2,500 words, ceiling 3,000).
-
-Output only the newsletter markdown.`;
-    WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE = `You will receive a newsletter design document, evaluation notes for
-ALL articles (so you have the big picture of the whole week), and a
-chunk of articles assigned to your section.
-
-Write only the newsletter sections that these articles map to,
-following the design doc format, tone, and citation requirements. Do
-not write other sections.
-
-Section to write: {SECTION}
-
-Output only the section markdown, starting with the section heading.`;
-    ASSEMBLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes, and
-section drafts written by different authors.
-
-Assemble the complete newsletter:
-1. Write The Briefing (3-4 paragraphs synthesizing across all
-   sections), ending with Signal and Noise
-2. Select the Hot Take quote from the source material
-3. Place one code snippet, prompt pattern, config example, or tool
-   invocation somewhere natural if not already present
-4. Ensure the whole thing reads as one coherent voice
-5. Stay within the word budget (max 2,500, ceiling 3,000)
-
-Output the complete newsletter markdown.`;
-    EDITORIAL_SYSTEM_PROMPT = `You will receive a newsletter design document and a draft newsletter.
-
-Re-read the draft with fresh eyes. Fix factual errors, tighten prose,
-cut anything that doesn't earn its place, make sure the tone is
-consistent throughout.
-
-Output in this exact format:
-
-=== EDITORIAL CHANGES ===
-Summary of changes made (factual corrections, structural changes,
-prose tightening, items verified correct)
-
-=== REVISED NEWSLETTER ===
-The complete revised newsletter markdown`;
-    SECTION_NAME_MAP = {
-      features: "New Features",
-      security: "Security & Bugs",
-      article: "Article of the Week",
-      techniques: "Techniques & Workflows",
-      building: "What Are They Talking About & What Are They Building?",
-      wider: "The Wider World"
-    };
-  }
-});
-
-// src/discover-feeds.ts
-var discover_feeds_exports = {};
-__export(discover_feeds_exports, {
-  discoverFeeds: () => discoverFeeds
-});
-import { readFileSync as readFileSync12, writeFileSync as writeFileSync9, existsSync as existsSync5 } from "fs";
-function shouldSkip(url) {
-  return SKIP_PATTERNS.some((p) => p.test(url));
-}
-function knownFeedUrl(url) {
-  const u3 = new URL(url);
-  if (u3.hostname.endsWith(".substack.com")) {
-    return `${u3.origin}/feed`;
-  }
-  if (u3.hostname === "dev.to") {
-    const username = u3.pathname.split("/").filter(Boolean)[0];
-    if (username) return `https://dev.to/feed/${username}`;
-  }
-  if (u3.hostname === "medium.com") {
-    return `https://medium.com/feed${u3.pathname}`;
-  }
-  if (u3.hostname.endsWith(".medium.com")) {
-    const sub = u3.hostname.replace(".medium.com", "");
-    return `https://medium.com/feed/@${sub}`;
-  }
-  return null;
-}
-async function validateFeed(feedUrl) {
-  try {
-    const res = await fetch(feedUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
-      signal: AbortSignal.timeout(1e4),
-      redirect: "follow"
-    });
-    if (!res.ok) return false;
-    const body = await res.text();
-    const feed = await parser2.parseString(body);
-    return (feed.items?.length ?? 0) > 0;
-  } catch {
-    return false;
-  }
-}
-function extractFeedLinks(html, baseUrl) {
-  const feeds = [];
-  const tagRegex = /<link\s[^>]*>/gi;
-  for (const match of html.matchAll(tagRegex)) {
-    const tag = match[0];
-    if (!/type=["']application\/(rss|atom)\+xml["']/i.test(tag)) continue;
-    const hrefMatch = tag.match(/href=["']([^"']+)["']/i);
-    if (!hrefMatch) continue;
-    try {
-      feeds.push(new URL(hrefMatch[1], baseUrl).href);
-    } catch {
-    }
-  }
-  return feeds;
-}
-async function discoverFromHtml(url) {
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
-      signal: AbortSignal.timeout(1e4),
-      redirect: "follow"
-    });
-    if (!res.ok) return [];
-    const html = await res.text();
-    return extractFeedLinks(html, url);
-  } catch {
-    return [];
-  }
-}
-async function tryCommonPaths(url) {
-  const u3 = new URL(url);
-  const base = u3.origin + u3.pathname.replace(/\/$/, "");
-  const candidates = [
-    .../* @__PURE__ */ new Set([
-      `${base}/feed`,
-      `${base}/rss`,
-      `${base}/feed.xml`,
-      `${base}/rss.xml`,
-      `${base}/atom.xml`,
-      `${base}/index.xml`,
-      `${u3.origin}/feed`,
-      `${u3.origin}/rss`,
-      `${u3.origin}/feed.xml`,
-      `${u3.origin}/rss.xml`,
-      `${u3.origin}/atom.xml`,
-      `${u3.origin}/index.xml`
-    ])
-  ];
-  const results = await Promise.allSettled(
-    candidates.map(async (candidate) => {
-      const valid = await validateFeed(candidate);
-      if (valid) return candidate;
-      throw new Error("not a feed");
-    })
-  );
-  for (const r of results) {
-    if (r.status === "fulfilled") return r.value;
-  }
-  return null;
-}
-async function discoverFeed(url) {
-  const known = knownFeedUrl(url);
-  if (known) {
-    if (await validateFeed(known)) return { method: "known", feed: known };
-  }
-  const htmlFeeds = await discoverFromHtml(url);
-  for (const feed of htmlFeeds) {
-    if (await validateFeed(feed)) return { method: "html", feed };
-  }
-  const commonFeed = await tryCommonPaths(url);
-  if (commonFeed) return { method: "path", feed: commonFeed };
-  return null;
-}
-async function mapConcurrent(items, concurrency, fn) {
-  const results = [];
-  const queue = items.map((item, i) => ({ item, i }));
-  await Promise.all(
-    Array.from({ length: concurrency }, async () => {
-      while (queue.length > 0) {
-        const { item, i } = queue.shift();
-        results[i] = await fn(item);
-      }
-    })
-  );
-  return results;
-}
-async function discoverFeeds() {
-  const existingFeeds = existsSync5("feeds.json") ? JSON.parse(readFileSync12("feeds.json", "utf-8")) : [];
-  const existingFeedSet = new Set(existingFeeds);
-  const CHECKED_PATH = "discovery/checked.json";
-  const checked = existsSync5(CHECKED_PATH) ? JSON.parse(readFileSync12(CHECKED_PATH, "utf-8")) : {};
-  const urls = [
-    ...new Set(
-      readFileSync12("discovery/found.txt", "utf-8").split("\n").map((l) => l.trim()).filter(Boolean)
-    )
-  ];
-  console.log(`Processing ${urls.length} URLs (${existingFeedSet.size} feeds already known)...
-`);
-  const results = await mapConcurrent(urls, 10, async (url) => {
-    if (shouldSkip(url)) {
-      console.log(`SKIP  ${url}`);
-      return { url, status: "skipped" };
-    }
-    if (url in checked) {
-      console.log(`DONE  ${url}`);
-      return { url, status: "skipped" };
-    }
-    try {
-      const result = await discoverFeed(url);
-      if (result) {
-        checked[url] = result.feed;
-        if (existingFeedSet.has(result.feed)) {
-          console.log(`HAVE  ${url} \u2192 ${result.feed}`);
-          return { url, status: "skipped" };
-        }
-        console.log(`FOUND ${url}
-   \u2192 ${result.feed} (${result.method})`);
-        return { url, status: "found", method: result.method, feed: result.feed };
-      }
-      checked[url] = null;
-      console.log(`NONE  ${url}`);
-      return { url, status: "none" };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      checked[url] = null;
-      console.log(`ERR   ${url}: ${msg}`);
-      return { url, status: "error", error: msg };
-    }
-  });
-  const found = results.filter((r) => r.status === "found");
-  const skipped = results.filter((r) => r.status === "skipped");
-  const noFeed = results.filter((r) => r.status === "none" || r.status === "error");
-  const newFeeds = found.map((r) => r.feed);
-  if (newFeeds.length > 0) {
-    const merged = [...existingFeeds, ...newFeeds];
-    writeFileSync9("feeds.json", JSON.stringify(merged, null, 2) + "\n");
-  }
-  writeFileSync9(CHECKED_PATH, JSON.stringify(checked, null, 2) + "\n");
-  writeFileSync9(
-    "discovery/skipped.txt",
-    skipped.map((r) => r.url).join("\n") + "\n"
-  );
-  writeFileSync9(
-    "discovery/no-feed.txt",
-    noFeed.map((r) => r.url).join("\n") + "\n"
-  );
-  console.log(`
---- Summary ---`);
-  console.log(`New feeds found: ${newFeeds.length}`);
-  console.log(`Skipped: ${skipped.length}`);
-  console.log(`No feed found: ${noFeed.length}`);
-  if (newFeeds.length > 0) {
-    console.log(`
-Appended ${newFeeds.length} new feeds to feeds.json (${existingFeeds.length} \u2192 ${existingFeeds.length + newFeeds.length} total)`);
-  }
-}
-var import_rss_parser2, parser2, SKIP_PATTERNS;
-var init_discover_feeds = __esm({
-  "src/discover-feeds.ts"() {
-    "use strict";
-    import_rss_parser2 = __toESM(require_rss_parser(), 1);
-    parser2 = new import_rss_parser2.default();
-    SKIP_PATTERNS = [
-      /^https:\/\/github\.com/,
-      /^https:\/\/gist\.github\.com/,
-      /^https:\/\/discord\.com/,
-      /^https:\/\/x\.com/,
-      /^https:\/\/twitter\.com/,
-      /^https:\/\/(www\.)?youtube\.com/,
-      /^https:\/\/podcasts\.apple\.com/,
-      /^https:\/\/open\.spotify\.com/,
-      /^https:\/\/(www\.)?npmjs\.com/,
-      /^https:\/\/arxiv\.org/,
-      /^https:\/\/(www\.)?udemy\.com/,
-      /^https:\/\/(www\.)?pluralsight\.com/,
-      /^https:\/\/(www\.)?skool\.com/,
-      /^https:\/\/learn\.deeplearning\.ai/,
-      /^https:\/\/(www\.)?reddit\.com/,
-      /^https:\/\/twitter-thread\.com/,
-      /^https:\/\/deepwiki\.com/,
-      /^https:\/\/roadmap\.sh/
-    ];
-  }
-});
-
-// src/append-found.ts
-var append_found_exports = {};
-__export(append_found_exports, {
-  appendFound: () => appendFound
-});
-import { readFileSync as readFileSync13, appendFileSync, mkdirSync as mkdirSync7, existsSync as existsSync6 } from "fs";
-import { dirname } from "path";
-function appendFound(file, urls) {
-  mkdirSync7(dirname(file), { recursive: true });
-  const existing = new Set(
-    existsSync6(file) ? readFileSync13(file, "utf-8").split("\n").filter(Boolean) : []
-  );
-  const added = [];
-  for (const url of urls) {
-    if (!existing.has(url)) {
-      appendFileSync(file, url + "\n");
-      existing.add(url);
-      added.push(url);
-    }
-  }
-  const dupes = urls.length - added.length;
-  if (added.length) console.log(`Added ${added.length}: ${added.join(", ")}`);
-  if (dupes) console.log(`Skipped ${dupes} already in list`);
-}
-var init_append_found = __esm({
-  "src/append-found.ts"() {
-    "use strict";
-    if (process.argv[1]?.includes("append-found")) {
-      appendFound(process.argv[2], process.argv.slice(3));
-    }
-  }
-});
-
-// src/combine-lists.ts
-var combine_lists_exports = {};
-__export(combine_lists_exports, {
-  combineLists: () => combineLists
-});
-import { readFileSync as readFileSync14, writeFileSync as writeFileSync10 } from "fs";
-function combineLists(outputFile, inputFiles) {
-  const lines = /* @__PURE__ */ new Set();
-  for (const file of inputFiles) {
-    const content = readFileSync14(file, "utf-8");
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      if (trimmed.startsWith("\u2192")) continue;
-      lines.add(trimmed);
-    }
-  }
-  const sorted = [...lines].sort();
-  writeFileSync10(outputFile, sorted.join("\n") + "\n");
-  console.log(`Combined ${inputFiles.length} files \u2192 ${sorted.length} unique lines \u2192 ${outputFile}`);
-}
-var init_combine_lists = __esm({
-  "src/combine-lists.ts"() {
-    "use strict";
-    if (process.argv[1]?.includes("combine-lists")) {
-      if (process.argv[2] && process.argv[3]) {
-        combineLists(process.argv[2], process.argv.slice(3));
-      } else {
-        console.error("Usage: combine-lists.ts <output-file> <input-file-1> [input-file-2] ...");
-        process.exit(1);
-      }
-    }
-  }
-});
-
 // node_modules/marked/lib/marked.esm.js
-var marked_esm_exports = {};
-__export(marked_esm_exports, {
-  Hooks: () => P,
-  Lexer: () => x,
-  Marked: () => D,
-  Parser: () => b,
-  Renderer: () => y,
-  TextRenderer: () => $,
-  Tokenizer: () => w,
-  defaults: () => T,
-  getDefaults: () => M,
-  lexer: () => Jt,
-  marked: () => g,
-  options: () => Qt,
-  parse: () => Wt,
-  parseInline: () => Kt,
-  parser: () => Xt,
-  setOptions: () => jt,
-  use: () => Ft,
-  walkTokens: () => Ut
-});
 function M() {
   return { async: false, breaks: false, extensions: null, gfm: true, hooks: null, pedantic: false, renderer: null, silent: false, tokenizer: null, walkTokens: null };
 }
@@ -31700,7 +30376,7 @@ function nt(u3, e, t) {
 function g(u3, e) {
   return L.parse(u3, e);
 }
-var T, _, be, m, Re, Te, Oe, C, we, Q, se, ie, ye, j, Pe, F, Se, $e, v, U, _e, oe, Le, K, ne, Me, ze, Ee, Ie, ae, Ae, z, H, W, Ce, le, Be, De, qe, ue, ve, He, pe, Ze, Ge, Ne, Qe, je, Fe, Ue, Ke, We, Xe, q, Je, ce, he, Ve, re, X, Ye, N, et, B, E, tt, ke, w, x, y, $, b, P, D, L, Qt, jt, Ft, Ut, Kt, Wt, Xt, Jt;
+var T, _, be, m, Re, Te, Oe, C, we, Q, se, ie, ye, j, Pe, F, Se, $e, v, U, _e, oe, Le, K, ne, Me, ze, Ee, Ie, ae, Ae, z, H, W, Ce, le, Be, De, qe, ue, ve, He, pe, Ze, Ge, Ne, Qe, je, Fe, Ue, Ke, We, Xe, q, Je, ce, he, Ve, re, X, Ye, N, et, B, E, tt, ke, w, x, y, $, b, P, D, L, Qt, jt, Ft, Ut, Kt, Xt, Jt;
 var init_marked_esm = __esm({
   "node_modules/marked/lib/marked.esm.js"() {
     "use strict";
@@ -32820,14 +31496,1337 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     Ft = g.use;
     Ut = g.walkTokens;
     Kt = g.parseInline;
-    Wt = g;
     Xt = b.parse;
     Jt = x.lex;
   }
 });
 
+// src/util.ts
+import { writeFileSync as writeFileSync5, mkdirSync as mkdirSync4, readdirSync as readdirSync2, unlinkSync } from "fs";
+import { join as join3 } from "path";
+function wordCount(text) {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+function chunkAndWrite(entries, outputDir, wordsPerChunk = 3e4) {
+  const chunks = [];
+  let current = "";
+  let currentWords = 0;
+  for (const entry of entries) {
+    const words = wordCount(entry);
+    if (currentWords + words > wordsPerChunk && current) {
+      chunks.push(current);
+      current = "";
+      currentWords = 0;
+    }
+    current += entry + "\n";
+    currentWords += words;
+  }
+  if (current.trim()) {
+    chunks.push(current);
+  }
+  mkdirSync4(outputDir, { recursive: true });
+  for (const f of readdirSync2(outputDir)) {
+    if (/^chunk-\d+\.md$/.test(f)) unlinkSync(join3(outputDir, f));
+  }
+  for (let i = 0; i < chunks.length; i++) {
+    const path2 = join3(outputDir, `chunk-${i + 1}.md`);
+    writeFileSync5(path2, chunks[i]);
+  }
+  return chunks.length;
+}
+var FEEDS_DIR;
+var init_util = __esm({
+  "src/util.ts"() {
+    "use strict";
+    FEEDS_DIR = "content";
+  }
+});
+
+// src/recent-headers.ts
+var recent_headers_exports = {};
+__export(recent_headers_exports, {
+  recentHeaders: () => recentHeaders
+});
+import { readFileSync as readFileSync6, readdirSync as readdirSync3, statSync as statSync3 } from "fs";
+import { join as join4 } from "path";
+function today() {
+  const d = /* @__PURE__ */ new Date();
+  return d.toISOString().slice(0, 10);
+}
+function parseCliArgs(argv) {
+  let days = 7;
+  let date = today();
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--date" && argv[i + 1]) {
+      date = argv[i + 1];
+      i++;
+    } else if (!argv[i].startsWith("--")) {
+      days = parseInt(argv[i], 10);
+    }
+  }
+  return { days, outputDir: `newsletters/${date}` };
+}
+function parseHeaderYaml(content) {
+  const fields = {};
+  for (const line of content.split("\n")) {
+    const match = line.match(/^(\w+):\s*"(.*)"\s*$/);
+    if (match) {
+      fields[match[1]] = match[2];
+    }
+  }
+  return fields;
+}
+function isWithinDays(dateStr, days) {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
+  const cutoff = /* @__PURE__ */ new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return date >= cutoff;
+}
+function hasSummary(summary) {
+  if (!summary) return false;
+  if (summary === "No content.") return false;
+  return true;
+}
+function collectArticles(days) {
+  const articles = [];
+  const sources = readdirSync3(FEEDS_DIR);
+  for (const source of sources) {
+    const sourceDir = join4(FEEDS_DIR, source);
+    if (!statSync3(sourceDir).isDirectory()) continue;
+    const files = readdirSync3(sourceDir);
+    const headers = files.filter((f) => f.endsWith("-header.yaml"));
+    for (const headerFile of headers) {
+      const headerPath = join4(sourceDir, headerFile);
+      const raw = readFileSync6(headerPath, "utf-8");
+      const fields = parseHeaderYaml(raw);
+      if (!isWithinDays(fields.date, days)) continue;
+      if (!hasSummary(fields.summary)) continue;
+      articles.push({
+        headerPath: join4(source, headerFile),
+        source,
+        title: fields.title || "Untitled",
+        link: fields.link || "",
+        date: fields.date,
+        summary: fields.summary
+      });
+    }
+  }
+  articles.sort((a, b2) => new Date(b2.date).getTime() - new Date(a.date).getTime());
+  return articles;
+}
+function formatArticle(article) {
+  return [
+    `# ${article.title}`,
+    `Header: ${article.headerPath}`,
+    `Source: ${article.source}`,
+    `Date: ${article.date}`,
+    `Link: ${article.link}`,
+    "",
+    `**Summary:** ${article.summary}`,
+    "",
+    "---",
+    ""
+  ].join("\n");
+}
+function recentHeaders(args) {
+  const { days, outputDir } = parseCliArgs(args);
+  const articles = collectArticles(days);
+  const entries = articles.map(formatArticle);
+  const chunkCount = chunkAndWrite(entries, outputDir);
+  console.log(outputDir);
+  console.log(`Collected ${articles.length} articles from the last ${days} days`);
+  console.log(`Written to ${chunkCount} chunks in ${outputDir}/`);
+}
+var init_recent_headers = __esm({
+  "src/recent-headers.ts"() {
+    "use strict";
+    init_util();
+  }
+});
+
+// src/chunk-articles.ts
+var chunk_articles_exports = {};
+__export(chunk_articles_exports, {
+  chunkArticles: () => chunkArticles
+});
+import { readFileSync as readFileSync7 } from "fs";
+import { join as join5 } from "path";
+function chunkArticles(inputFile, outputDir) {
+  const headerPaths = readFileSync7(inputFile, "utf-8").split("\n").map((l) => l.replace(/\s*\|.*$/, "").trim()).filter((l) => l && !l.startsWith("\u2192"));
+  const entries = [];
+  for (const headerPath of headerPaths) {
+    const headerFullPath = join5(FEEDS_DIR, headerPath);
+    const mdPath = join5(FEEDS_DIR, headerPath.replace("-header.yaml", ".md"));
+    let header;
+    try {
+      header = readFileSync7(headerFullPath, "utf-8").trim();
+    } catch {
+      continue;
+    }
+    let article = "";
+    try {
+      article = readFileSync7(mdPath, "utf-8").trim();
+    } catch {
+    }
+    entries.push(
+      [`Header: ${headerPath}`, header, "", article, "", "---", ""].join("\n")
+    );
+  }
+  const chunkCount = chunkAndWrite(entries, outputDir);
+  console.log(`Chunked ${headerPaths.length} articles into ${chunkCount} chunks in ${outputDir}/`);
+}
+var init_chunk_articles = __esm({
+  "src/chunk-articles.ts"() {
+    "use strict";
+    init_util();
+    if (process.argv[1]?.includes("chunk-articles")) {
+      if (process.argv[2] && process.argv[3]) {
+        chunkArticles(process.argv[2], process.argv[3]);
+      } else {
+        console.error("Usage: chunk-articles.ts <shortlist-file> <output-dir>");
+        process.exit(1);
+      }
+    }
+  }
+});
+
+// src/prepare-articles.ts
+var prepare_articles_exports = {};
+__export(prepare_articles_exports, {
+  prepare: () => prepare
+});
+import { readFileSync as readFileSync8, writeFileSync as writeFileSync6, mkdirSync as mkdirSync5 } from "fs";
+import { join as join6 } from "path";
+function prepare(evaluationsFile, outputDir) {
+  const content = readFileSync8(evaluationsFile, "utf-8");
+  const entries = [];
+  const blocks = content.split(/^(?:---|```)$/m);
+  for (const block of blocks) {
+    const text = block.trim();
+    if (!text) continue;
+    const headerMatch = text.match(/^#{0,3}\s*Header:\s*(.+)$/m);
+    if (!headerMatch) continue;
+    const headerPath = headerMatch[1].trim();
+    const decisionMatch = text.match(
+      /(?:\*\*Decision:\*\*\s*|^)(INCLUDE|EXCLUDE)/m
+    );
+    if (!decisionMatch || decisionMatch[1] !== "INCLUDE") continue;
+    let section = "Unknown";
+    const sectionMatch = text.match(/\*\*Section:\*\*\s*(.+)$/m);
+    const inlineMatch = text.match(/^INCLUDE\s*[—–-]\s*(.+)$/m);
+    if (sectionMatch) {
+      section = sectionMatch[1].trim();
+    } else if (inlineMatch) {
+      section = inlineMatch[1].trim();
+    }
+    let summary = "";
+    const summaryMatch = text.match(/\*\*Summary:\*\*\s*([\s\S]+?)$/m);
+    if (summaryMatch) {
+      summary = summaryMatch[1].trim();
+    }
+    const mdPath = join6(FEEDS_DIR, headerPath.replace("-header.yaml", ".md"));
+    let articleWords = 0;
+    try {
+      articleWords = wordCount(readFileSync8(mdPath, "utf-8"));
+    } catch {
+    }
+    entries.push({
+      headerPath,
+      section,
+      summary,
+      articleWords
+    });
+  }
+  mkdirSync5(outputDir, { recursive: true });
+  const includesPath = join6(outputDir, "includes.txt");
+  writeFileSync6(
+    includesPath,
+    entries.map((e) => e.headerPath).join("\n") + "\n"
+  );
+  let totalWords = 0;
+  for (const entry of entries) {
+    totalWords += entry.articleWords;
+  }
+  if (totalWords <= AFFINITY_THRESHOLD) {
+    const chunksDir = join6(outputDir, "single");
+    chunkArticles(includesPath, chunksDir);
+    console.log(
+      `
+${entries.length} articles, ${totalWords} words \u2014 chunked to ${chunksDir}/`
+    );
+    return { mode: "single", totalWords };
+  } else {
+    const groups = /* @__PURE__ */ new Map();
+    for (const entry of entries) {
+      const primarySection = entry.section.split(";")[0].trim();
+      const key = SECTION_KEY_MAP[primarySection] || "other";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(entry.headerPath);
+    }
+    for (const [key, paths] of groups) {
+      const groupFile = join6(outputDir, `group-${key}.txt`);
+      writeFileSync6(groupFile, paths.join("\n") + "\n");
+      const groupDir = join6(outputDir, `group-${key}`);
+      chunkArticles(groupFile, groupDir);
+    }
+    console.log(
+      `
+${entries.length} articles, ${totalWords} words \u2014 grouped into ${groups.size} sections`
+    );
+    return { mode: "grouped", totalWords };
+  }
+}
+var AFFINITY_THRESHOLD, SECTION_KEY_MAP;
+var init_prepare_articles = __esm({
+  "src/prepare-articles.ts"() {
+    "use strict";
+    init_util();
+    init_chunk_articles();
+    AFFINITY_THRESHOLD = 5e4;
+    SECTION_KEY_MAP = {
+      "New Features": "features",
+      "Security & Bugs": "security",
+      "Article of the Week": "article",
+      "Techniques & Workflows": "techniques",
+      "What Are They Talking About & What Are They Building?": "building",
+      "The Wider World": "wider"
+    };
+    if (process.argv[1]?.includes("prepare-articles")) {
+      if (process.argv[2] && process.argv[3]) {
+        prepare(process.argv[2], process.argv[3]);
+      } else {
+        console.error(
+          "Usage: prepare-articles.ts <evaluations-file> <output-dir>"
+        );
+        process.exit(1);
+      }
+    }
+  }
+});
+
+// src/extract-includes.ts
+var extract_includes_exports = {};
+__export(extract_includes_exports, {
+  extractIncludes: () => extractIncludes
+});
+import { readFileSync as readFileSync9, writeFileSync as writeFileSync7 } from "fs";
+function extractIncludes(outputFile, inputFiles) {
+  const paths = /* @__PURE__ */ new Set();
+  for (const file of inputFiles) {
+    const content = readFileSync9(file, "utf-8");
+    let currentHeader = null;
+    for (const line of content.split("\n")) {
+      const headerMatch = line.match(/^## Header:\s*(.+)/);
+      if (headerMatch) {
+        currentHeader = headerMatch[1].trim();
+        continue;
+      }
+      const decisionMatch = line.match(/^\*\*Decision:\*\*\s*(.+)/);
+      if (decisionMatch && currentHeader) {
+        if (decisionMatch[1].trim().toUpperCase() === "INCLUDE") {
+          paths.add(currentHeader);
+        }
+        currentHeader = null;
+      }
+    }
+  }
+  const sorted = [...paths].sort();
+  writeFileSync7(outputFile, sorted.join("\n") + "\n");
+  console.log(
+    `Extracted ${sorted.length} INCLUDE paths from ${inputFiles.length} files \u2192 ${outputFile}`
+  );
+}
+var init_extract_includes = __esm({
+  "src/extract-includes.ts"() {
+    "use strict";
+    if (process.argv[1]?.includes("extract-includes")) {
+      if (process.argv[2] && process.argv[3]) {
+        extractIncludes(process.argv[2], process.argv.slice(3));
+      } else {
+        console.error(
+          "Usage: extract-includes.ts <output-file> <input-file-1> [input-file-2] ..."
+        );
+        process.exit(1);
+      }
+    }
+  }
+});
+
+// src/chunk-headers.ts
+var chunk_headers_exports = {};
+__export(chunk_headers_exports, {
+  chunkHeaders: () => chunkHeaders
+});
+import { readFileSync as readFileSync10 } from "fs";
+import { join as join7 } from "path";
+function chunkHeaders(inputFile, outputDir) {
+  const paths = readFileSync10(inputFile, "utf-8").split("\n").map((l) => l.trim()).filter(Boolean);
+  const entries = [];
+  for (const headerPath of paths) {
+    const fullPath = join7(FEEDS_DIR, headerPath);
+    let content;
+    try {
+      content = readFileSync10(fullPath, "utf-8");
+    } catch {
+      continue;
+    }
+    entries.push(
+      [`Header: ${headerPath}`, content.trim(), "", "---", ""].join("\n")
+    );
+  }
+  const chunkCount = chunkAndWrite(entries, outputDir);
+  console.log(`Chunked ${paths.length} headers into ${chunkCount} chunks in ${outputDir}/`);
+}
+var init_chunk_headers = __esm({
+  "src/chunk-headers.ts"() {
+    "use strict";
+    init_util();
+    if (process.argv[1]?.includes("chunk-headers")) {
+      if (process.argv[2] && process.argv[3]) {
+        chunkHeaders(process.argv[2], process.argv[3]);
+      } else {
+        console.error("Usage: chunk-headers.ts <input-list> <output-dir>");
+        process.exit(1);
+      }
+    }
+  }
+});
+
+// src/newsletter.ts
+var newsletter_exports = {};
+__export(newsletter_exports, {
+  newsletter: () => newsletter
+});
+import {
+  readFileSync as readFileSync11,
+  writeFileSync as writeFileSync8,
+  mkdirSync as mkdirSync6,
+  readdirSync as readdirSync4,
+  existsSync as existsSync4,
+  unlinkSync as unlinkSync2,
+  rmSync
+} from "fs";
+import { join as join8 } from "path";
+import { spawn as spawn2 } from "child_process";
+async function callClaude2(systemPrompt, userPrompt, model, label) {
+  const fullText = systemPrompt + "\n" + userPrompt;
+  const tokens = await countTokens(fullText, true);
+  if (tokens != null) {
+    const tag = label ? ` [${label}]` : "";
+    console.error(`      ${tag} ${tokens.toLocaleString()} input tokens`);
+  }
+  return new Promise((resolve, reject) => {
+    const env = { ...process.env };
+    delete env.CLAUDECODE;
+    const proc = spawn2(
+      "claude",
+      ["-p", "--model", model, "--allowedTools", "", "--system-prompt", systemPrompt + NO_TOOLS],
+      { stdio: ["pipe", "pipe", "pipe"], env }
+    );
+    const timer = setTimeout(() => {
+      proc.kill();
+      const detail = stderr || stdout.slice(0, 1e3) || "(no output)";
+      reject(new Error(`claude timed out after ${CALL_TIMEOUT_MS / 1e3}s: ${detail}`));
+    }, CALL_TIMEOUT_MS);
+    proc.stdin.write(userPrompt);
+    proc.stdin.end();
+    let stdout = "";
+    let stderr = "";
+    proc.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    proc.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    proc.on("error", (err) => {
+      clearTimeout(timer);
+      reject(new Error(`claude failed to spawn: ${err.message}`));
+    });
+    proc.on("close", (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        const detail = stderr || stdout.slice(0, 1e3) || "(no output)";
+        reject(new Error(`claude exited with code ${code}: ${detail}`));
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+}
+function makeThrottle2() {
+  let next2 = Date.now();
+  return async () => {
+    const now = Date.now();
+    const wait = next2 - now;
+    next2 = Math.max(now, next2) + REQUEST_INTERVAL_MS2;
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  };
+}
+async function runPool(items, parallel, fn) {
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < items.length) {
+      const idx = nextIndex++;
+      await fn(items[idx], idx);
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(parallel, items.length) },
+    () => worker()
+  );
+  await Promise.all(workers);
+}
+function writeProgress(runDir, progress) {
+  writeFileSync8(join8(runDir, "progress.json"), JSON.stringify(progress) + "\n");
+}
+function countFiles(dir, pattern) {
+  if (!existsSync4(dir)) return 0;
+  return readdirSync4(dir).filter((f) => pattern.test(f)).length;
+}
+function wipeFiles(dir, pattern) {
+  if (!existsSync4(dir)) return;
+  for (const f of readdirSync4(dir)) {
+    if (pattern.test(f)) unlinkSync2(join8(dir, f));
+  }
+}
+async function newsletter(args) {
+  let date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  let days = 7;
+  let force = false;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--date" && args[i + 1]) {
+      date = args[i + 1];
+      i++;
+    } else if (args[i] === "--days" && args[i + 1]) {
+      days = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === "--force") {
+      force = true;
+    }
+  }
+  const runDir = `newsletters/${date}`;
+  mkdirSync6(runDir, { recursive: true });
+  const designDoc = readFileSync11("config/newsletter-design.md", "utf-8");
+  const throttle = makeThrottle2();
+  const totalStart = performance.now();
+  const draftPath = join8(runDir, "draft.md");
+  if (!force && countFiles(runDir, /^chunk-\d+\.md$/) > 0) {
+    console.error(`[1/8] Collecting recent headers... skipped (cached)`);
+  } else {
+    console.error(`[1/8] Collecting recent headers...`);
+    writeProgress(runDir, { step: 1, stepName: "collect", stepsTotal: 8 });
+    recentHeaders([String(days), "--date", date]);
+  }
+  const chunkFiles = readdirSync4(runDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
+  console.error(`      ${chunkFiles.length} chunks`);
+  if (chunkFiles.length === 0) {
+    console.error("No articles found. Nothing to do.");
+    return;
+  }
+  const relevantPath = join8(runDir, "relevant.txt");
+  if (!force && existsSync4(relevantPath) && countFiles(runDir, /^filter-\d+\.md$/) === chunkFiles.length) {
+    console.error(`[2/8] Filtering for relevance... skipped (cached)`);
+  } else {
+    console.error(`[2/8] Filtering for relevance...`);
+    wipeFiles(runDir, /^filter-\d+\.md$/);
+    if (existsSync4(relevantPath)) unlinkSync2(relevantPath);
+    const filterResults = [];
+    async function filterChunk(chunkFile, idx) {
+      await throttle();
+      const chunkContent = readFileSync11(join8(runDir, chunkFile), "utf-8");
+      const userPrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== ARTICLE HEADERS ===
+${chunkContent}`;
+      const start = performance.now();
+      try {
+        const result = await callClaude2(FILTER_SYSTEM_PROMPT, userPrompt, "opus", `filter ${idx + 1}/${chunkFiles.length}`);
+        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
+        const outPath = join8(runDir, `filter-${idx + 1}.md`);
+        writeFileSync8(outPath, result);
+        filterResults.push(outPath);
+        console.error(
+          `      filter ${idx + 1}/${chunkFiles.length} \u2713 (${elapsed}s)`
+        );
+        writeProgress(runDir, {
+          step: 2,
+          stepName: "filter",
+          stepsTotal: 8,
+          chunksTotal: chunkFiles.length,
+          chunksDone: filterResults.length
+        });
+      } catch (err) {
+        console.error(
+          `      filter ${idx + 1}/${chunkFiles.length} \u2717 ${err}`
+        );
+      }
+    }
+    await runPool(
+      chunkFiles,
+      PARALLEL,
+      (file, idx) => filterChunk(file, idx)
+    );
+    extractIncludes(relevantPath, filterResults.sort());
+  }
+  const relevantCount = readFileSync11(relevantPath, "utf-8").split("\n").filter(Boolean).length;
+  console.error(`      ${relevantCount} included \u2192 relevant.txt`);
+  if (relevantCount === 0) {
+    console.error("No relevant articles after filtering. Nothing to do.");
+    return;
+  }
+  const prioritiseDir = join8(runDir, "prioritise");
+  const shortlistPath = join8(runDir, "shortlist.txt");
+  const prioritiseChunkCount = countFiles(prioritiseDir, /^chunk-\d+\.md$/);
+  const prioritiseResultCount = countFiles(runDir, /^prioritise-\d+\.md$/);
+  if (!force && existsSync4(shortlistPath) && prioritiseChunkCount > 0 && prioritiseResultCount === prioritiseChunkCount) {
+    console.error(`[3/8] Prioritising for deep reading... skipped (cached)`);
+  } else {
+    console.error(`[3/8] Prioritising for deep reading...`);
+    wipeFiles(runDir, /^prioritise-\d+\.md$/);
+    if (existsSync4(shortlistPath)) unlinkSync2(shortlistPath);
+    if (existsSync4(prioritiseDir)) rmSync(prioritiseDir, { recursive: true });
+    chunkHeaders(relevantPath, prioritiseDir);
+    const prioritiseChunks = readdirSync4(prioritiseDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
+    const prioritiseResults = [];
+    async function prioritiseChunk(chunkFile, idx) {
+      await throttle();
+      const chunkContent = readFileSync11(join8(prioritiseDir, chunkFile), "utf-8");
+      const userPrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== ARTICLE HEADERS ===
+${chunkContent}`;
+      const start = performance.now();
+      try {
+        const result = await callClaude2(
+          PRIORITISE_SYSTEM_PROMPT,
+          userPrompt,
+          "opus",
+          `prioritise ${idx + 1}/${prioritiseChunks.length}`
+        );
+        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
+        const outPath = join8(runDir, `prioritise-${idx + 1}.md`);
+        writeFileSync8(outPath, result);
+        prioritiseResults.push(outPath);
+        console.error(
+          `      prioritise ${idx + 1}/${prioritiseChunks.length} \u2713 (${elapsed}s)`
+        );
+        writeProgress(runDir, {
+          step: 3,
+          stepName: "prioritise",
+          stepsTotal: 8,
+          chunksTotal: prioritiseChunks.length,
+          chunksDone: prioritiseResults.length
+        });
+      } catch (err) {
+        console.error(
+          `      prioritise ${idx + 1}/${prioritiseChunks.length} \u2717 ${err}`
+        );
+      }
+    }
+    await runPool(
+      prioritiseChunks,
+      PARALLEL,
+      (file, idx) => prioritiseChunk(file, idx)
+    );
+    extractIncludes(shortlistPath, prioritiseResults.sort());
+  }
+  const shortlistCount = readFileSync11(shortlistPath, "utf-8").split("\n").filter(Boolean).length;
+  console.error(`      ${shortlistCount} shortlisted \u2192 shortlist.txt`);
+  if (shortlistCount === 0) {
+    console.error("No articles shortlisted. Nothing to do.");
+    return;
+  }
+  const deepReadDir = join8(runDir, "deep-read");
+  const evaluationsPath = join8(runDir, "evaluations.md");
+  const deepReadChunkCount = countFiles(deepReadDir, /^chunk-\d+\.md$/);
+  const evaluationResultCount = countFiles(runDir, /^evaluations-\d+\.md$/);
+  if (!force && existsSync4(evaluationsPath) && deepReadChunkCount > 0 && evaluationResultCount === deepReadChunkCount) {
+    console.error(`[4/8] Deep reading and evaluating... skipped (cached)`);
+  } else {
+    console.error(`[4/8] Deep reading and evaluating...`);
+    wipeFiles(runDir, /^evaluations-\d+\.md$/);
+    if (existsSync4(evaluationsPath)) unlinkSync2(evaluationsPath);
+    if (existsSync4(deepReadDir)) rmSync(deepReadDir, { recursive: true });
+    chunkArticles(shortlistPath, deepReadDir);
+    const deepReadChunks = readdirSync4(deepReadDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
+    const evaluationFiles = [];
+    async function deepReadChunk(chunkFile, idx) {
+      await throttle();
+      const chunkContent = readFileSync11(join8(deepReadDir, chunkFile), "utf-8");
+      const userPrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== ARTICLES ===
+${chunkContent}`;
+      const start = performance.now();
+      try {
+        const result = await callClaude2(
+          DEEP_READ_SYSTEM_PROMPT,
+          userPrompt,
+          "opus",
+          `deep-read ${idx + 1}/${deepReadChunks.length}`
+        );
+        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
+        const outPath = join8(runDir, `evaluations-${idx + 1}.md`);
+        writeFileSync8(outPath, result);
+        evaluationFiles.push(outPath);
+        console.error(
+          `      deep-read ${idx + 1}/${deepReadChunks.length} \u2713 (${elapsed}s)`
+        );
+        writeProgress(runDir, {
+          step: 4,
+          stepName: "deep-read",
+          stepsTotal: 8,
+          chunksTotal: deepReadChunks.length,
+          chunksDone: evaluationFiles.length
+        });
+      } catch (err) {
+        console.error(
+          `      deep-read ${idx + 1}/${deepReadChunks.length} \u2717 ${err}`
+        );
+      }
+    }
+    await runPool(
+      deepReadChunks,
+      PARALLEL,
+      (file, idx) => deepReadChunk(file, idx)
+    );
+    const evaluationsContent = evaluationFiles.sort().map((f) => readFileSync11(f, "utf-8")).join("\n---\n\n");
+    writeFileSync8(evaluationsPath, evaluationsContent);
+    console.error(`      evaluations written \u2192 evaluations.md`);
+  }
+  const newsletterInputDir = join8(runDir, "newsletter-input");
+  const singleDirExists = existsSync4(join8(newsletterInputDir, "single"));
+  const hasGroupDirs = existsSync4(newsletterInputDir) && readdirSync4(newsletterInputDir, { withFileTypes: true }).some(
+    (f) => f.isDirectory() && f.name.startsWith("group-")
+  );
+  let mode;
+  if (!force && (singleDirExists || hasGroupDirs)) {
+    console.error(`[5/8] Preparing article content... skipped (cached)`);
+    mode = singleDirExists ? "single" : "grouped";
+  } else {
+    console.error(`[5/8] Preparing article content...`);
+    writeProgress(runDir, { step: 5, stepName: "prepare", stepsTotal: 8 });
+    if (existsSync4(newsletterInputDir))
+      rmSync(newsletterInputDir, { recursive: true });
+    const prepareResult = prepare(evaluationsPath, newsletterInputDir);
+    mode = prepareResult.mode;
+    console.error(
+      `      ${prepareResult.mode} mode, ${prepareResult.totalWords} words`
+    );
+  }
+  const newsletterPath = join8(runDir, "newsletter.md");
+  const evaluations = readFileSync11(evaluationsPath, "utf-8");
+  if (!force && existsSync4(draftPath)) {
+    console.error(`[6/8] Writing newsletter... skipped (cached)`);
+  } else if (mode === "single") {
+    console.error(`[6/8] Writing newsletter...`);
+    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 8 });
+    const singleDir = join8(newsletterInputDir, "single");
+    const articleChunks = readdirSync4(singleDir).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
+    const articlesContent = articleChunks.map((f) => readFileSync11(join8(singleDir, f), "utf-8")).join("\n");
+    const userPrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== EVALUATIONS ===
+${evaluations}
+
+=== ARTICLES ===
+${articlesContent}`;
+    await throttle();
+    const start = performance.now();
+    const result = await callClaude2(
+      WRITE_SINGLE_SYSTEM_PROMPT,
+      userPrompt,
+      "opus",
+      "write-single"
+    );
+    const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
+    writeFileSync8(draftPath, result);
+    console.error(`      written in ${elapsed}s \u2192 ${draftPath}`);
+  } else {
+    console.error(`[6/8] Writing newsletter...`);
+    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 8 });
+    const groupDirs = readdirSync4(newsletterInputDir, { withFileTypes: true }).filter((f) => f.isDirectory() && f.name.startsWith("group-")).map((f) => f.name).sort();
+    const tasks = [];
+    for (const groupDir of groupDirs) {
+      const key = groupDir.replace("group-", "");
+      const sectionName = SECTION_NAME_MAP[key] || key;
+      const groupPath = join8(newsletterInputDir, groupDir);
+      const groupChunks = readdirSync4(groupPath).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
+      for (let i = 0; i < groupChunks.length; i++) {
+        tasks.push({
+          key,
+          sectionName,
+          chunkFile: join8(groupPath, groupChunks[i]),
+          chunkIndex: i,
+          totalChunks: groupChunks.length
+        });
+      }
+    }
+    const expectedSections = tasks.map((task) => {
+      const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
+      return `section-${task.key}${suffix}.md`;
+    });
+    const allSectionsExist = expectedSections.every(
+      (f) => existsSync4(join8(runDir, f))
+    );
+    if (force || !allSectionsExist) {
+      wipeFiles(runDir, /^section-.*\.md$/);
+      async function writeSectionDraft(task) {
+        await throttle();
+        const chunkContent = readFileSync11(task.chunkFile, "utf-8");
+        const systemPrompt = WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE.replace(
+          "{SECTION}",
+          task.sectionName
+        );
+        const userPrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== EVALUATIONS ===
+${evaluations}
+
+=== ARTICLES ===
+${chunkContent}`;
+        const start = performance.now();
+        const result = await callClaude2(systemPrompt, userPrompt, "opus", `section ${task.key} ${task.chunkIndex + 1}/${task.totalChunks}`);
+        const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
+        const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
+        const outPath = join8(runDir, `section-${task.key}${suffix}.md`);
+        writeFileSync8(outPath, result);
+        console.error(
+          `      section ${task.key} chunk ${task.chunkIndex + 1}/${task.totalChunks} \u2713 (${elapsed}s)`
+        );
+      }
+      await runPool(tasks, PARALLEL, (task) => writeSectionDraft(task));
+    } else {
+      console.error(`      section drafts cached, skipping to assembly`);
+    }
+    console.error(`      assembling...`);
+    const sectionDraftFiles = readdirSync4(runDir).filter((f) => f.startsWith("section-") && f.endsWith(".md")).sort();
+    const draftsContent = sectionDraftFiles.map((f) => `=== ${f} ===
+${readFileSync11(join8(runDir, f), "utf-8")}`).join("\n\n");
+    const assemblePrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== EVALUATIONS ===
+${evaluations}
+
+=== SECTION DRAFTS ===
+${draftsContent}`;
+    await throttle();
+    const assembleStart = performance.now();
+    const assembled = await callClaude2(
+      ASSEMBLE_SYSTEM_PROMPT,
+      assemblePrompt,
+      "opus",
+      "assemble"
+    );
+    const assembleElapsed = ((performance.now() - assembleStart) / 1e3).toFixed(0);
+    writeFileSync8(draftPath, assembled);
+    console.error(
+      `      assembled in ${assembleElapsed}s \u2192 ${draftPath}`
+    );
+  }
+  if (!force && existsSync4(newsletterPath)) {
+    console.error(`[7/8] Editorial pass... skipped (cached)`);
+  } else {
+    console.error(`[7/8] Editorial pass...`);
+    writeProgress(runDir, { step: 7, stepName: "editorial", stepsTotal: 8 });
+    const draftContent = readFileSync11(draftPath, "utf-8");
+    const editorialPrompt = `=== NEWSLETTER DESIGN ===
+${designDoc}
+
+=== DRAFT ===
+${draftContent}`;
+    await throttle();
+    const editorialStart = performance.now();
+    const editorialOutput = await callClaude2(
+      EDITORIAL_SYSTEM_PROMPT,
+      editorialPrompt,
+      "opus",
+      "editorial"
+    );
+    const editorialElapsed = ((performance.now() - editorialStart) / 1e3).toFixed(0);
+    const revisedSplit = editorialOutput.split("=== REVISED NEWSLETTER ===");
+    if (revisedSplit.length >= 2) {
+      const changesSplit = revisedSplit[0].split("=== EDITORIAL CHANGES ===");
+      if (changesSplit.length >= 2) {
+        writeFileSync8(
+          join8(runDir, "editorial-changes.md"),
+          changesSplit[1].trim()
+        );
+      }
+      writeFileSync8(newsletterPath, revisedSplit[1].trim());
+    } else {
+      writeFileSync8(newsletterPath, editorialOutput);
+    }
+    console.error(
+      `      editorial pass done (${editorialElapsed}s) \u2192 ${newsletterPath}`
+    );
+  }
+  const htmlPath = join8(runDir, "newsletter.html");
+  console.error(`[8/8] Generating HTML...`);
+  const finalMd = readFileSync11(newsletterPath, "utf-8");
+  const css = existsSync4("config/style.css") ? readFileSync11("config/style.css", "utf-8") : "";
+  const body = await g(finalMd);
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+${css}
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+  writeFileSync8(htmlPath, html);
+  console.error(`      \u2192 ${htmlPath}`);
+  writeProgress(runDir, { step: 8, stepName: "done", stepsTotal: 8 });
+  const totalElapsed = ((performance.now() - totalStart) / 1e3).toFixed(0);
+  console.error(`
+Done in ${totalElapsed}s \u2192 ${newsletterPath}`);
+}
+var PARALLEL, REQUEST_INTERVAL_MS2, CALL_TIMEOUT_MS, NO_TOOLS, FILTER_SYSTEM_PROMPT, PRIORITISE_SYSTEM_PROMPT, DEEP_READ_SYSTEM_PROMPT, WRITE_SINGLE_SYSTEM_PROMPT, WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE, ASSEMBLE_SYSTEM_PROMPT, EDITORIAL_SYSTEM_PROMPT, SECTION_NAME_MAP;
+var init_newsletter = __esm({
+  "src/newsletter.ts"() {
+    "use strict";
+    init_marked_esm();
+    init_recent_headers();
+    init_prepare_articles();
+    init_extract_includes();
+    init_chunk_headers();
+    init_chunk_articles();
+    init_count_tokens();
+    PARALLEL = 10;
+    REQUEST_INTERVAL_MS2 = 2500;
+    CALL_TIMEOUT_MS = 6e5;
+    NO_TOOLS = `
+
+Do not use any tools. Do not search the web. Do not read or write files. Output your complete response as text.`;
+    FILTER_SYSTEM_PROMPT = `You will receive a newsletter design document and a batch of article
+headers with summaries.
+
+Review every header and decide whether it could be relevant to any
+section of the newsletter \u2014 not just Claude Code content, but also
+anything that might fit in The Wider World, Security & Bugs,
+Techniques, or community discussion.
+
+Write a decision for every header using this format, separated by ---:
+
+## Header: path/to/header.yaml
+**Decision:** INCLUDE
+**Reason:** Covers a new Claude Code CLI feature relevant to New Features section
+---
+## Header: path/to/other.yaml
+**Decision:** EXCLUDE
+**Reason:** Generic AI industry news, not specific enough for any section
+---
+
+This is a filtering pass \u2014 cast a wide net. When in doubt, include it.`;
+    PRIORITISE_SYSTEM_PROMPT = `You will receive a newsletter design document and a batch of article
+headers that passed an initial relevance filter.
+
+Select the headers that are most worth reading in full \u2014 based on how
+interesting the topic is and how credible or high-quality the source
+appears.
+
+Write a decision for every header using this format, separated by ---:
+
+## Header: path/to/header.yaml
+**Decision:** INCLUDE
+**Reason:** High-quality source with concrete workflow details worth deep reading
+---
+## Header: path/to/other.yaml
+**Decision:** EXCLUDE
+**Reason:** Superficial listicle, unlikely to add substance on deeper read
+---
+
+Err on the side of including something if it looks promising.`;
+    DEEP_READ_SYSTEM_PROMPT = `You will receive a newsletter design document and a batch of full
+articles.
+
+Read every article in full and write an evaluation using this format,
+separated by ---:
+
+## Header: path/to/header.yaml
+**Decision:** INCLUDE or EXCLUDE
+**Section:** Section Name
+**Summary:** 2-3 sentences on the substance \u2014 what you actually learned
+from reading it, not just the header summary
+---
+
+For articles that should NOT be included, still list them with
+**Section:** N/A and a one-line summary explaining the exclusion so
+the decision is auditable.
+
+Section names: New Features, Security & Bugs, Article of the Week,
+Techniques & Workflows, What Are They Talking About & What Are They
+Building?, The Wider World
+
+For articles that fit multiple sections, use semicolons:
+**Section:** New Features; Security & Bugs
+Put the primary section first.`;
+    WRITE_SINGLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes for
+all articles, and the full article texts.
+
+Write the complete newsletter following the design doc \u2014 all sections,
+in order, with citations, in the correct tone. Stay within the word
+budget (max 2,500 words, ceiling 3,000).
+
+Output only the newsletter markdown.`;
+    WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE = `You will receive a newsletter design document, evaluation notes for
+ALL articles (so you have the big picture of the whole week), and a
+chunk of articles assigned to your section.
+
+Write only the newsletter sections that these articles map to,
+following the design doc format, tone, and citation requirements. Do
+not write other sections.
+
+Section to write: {SECTION}
+
+Output only the section markdown, starting with the section heading.`;
+    ASSEMBLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes, and
+section drafts written by different authors.
+
+Assemble the complete newsletter:
+1. Write The Briefing (3-4 paragraphs synthesizing across all
+   sections), ending with Signal and Noise
+2. Select the Hot Take quote from the source material
+3. Place one code snippet, prompt pattern, config example, or tool
+   invocation somewhere natural if not already present
+4. Ensure the whole thing reads as one coherent voice
+5. Stay within the word budget (max 2,500, ceiling 3,000)
+
+Output the complete newsletter markdown.`;
+    EDITORIAL_SYSTEM_PROMPT = `You will receive a newsletter design document and a draft newsletter.
+
+Re-read the draft with fresh eyes. Fix factual errors, tighten prose,
+cut anything that doesn't earn its place, make sure the tone is
+consistent throughout.
+
+Output in this exact format:
+
+=== EDITORIAL CHANGES ===
+Summary of changes made (factual corrections, structural changes,
+prose tightening, items verified correct)
+
+=== REVISED NEWSLETTER ===
+The complete revised newsletter markdown`;
+    SECTION_NAME_MAP = {
+      features: "New Features",
+      security: "Security & Bugs",
+      article: "Article of the Week",
+      techniques: "Techniques & Workflows",
+      building: "What Are They Talking About & What Are They Building?",
+      wider: "The Wider World"
+    };
+  }
+});
+
+// src/discover-feeds.ts
+var discover_feeds_exports = {};
+__export(discover_feeds_exports, {
+  discoverFeeds: () => discoverFeeds
+});
+import { readFileSync as readFileSync12, writeFileSync as writeFileSync9, existsSync as existsSync5 } from "fs";
+function shouldSkip(url) {
+  return SKIP_PATTERNS.some((p) => p.test(url));
+}
+function knownFeedUrl(url) {
+  const u3 = new URL(url);
+  if (u3.hostname.endsWith(".substack.com")) {
+    return `${u3.origin}/feed`;
+  }
+  if (u3.hostname === "dev.to") {
+    const username = u3.pathname.split("/").filter(Boolean)[0];
+    if (username) return `https://dev.to/feed/${username}`;
+  }
+  if (u3.hostname === "medium.com") {
+    return `https://medium.com/feed${u3.pathname}`;
+  }
+  if (u3.hostname.endsWith(".medium.com")) {
+    const sub = u3.hostname.replace(".medium.com", "");
+    return `https://medium.com/feed/@${sub}`;
+  }
+  return null;
+}
+async function validateFeed(feedUrl) {
+  try {
+    const res = await fetch(feedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
+      signal: AbortSignal.timeout(1e4),
+      redirect: "follow"
+    });
+    if (!res.ok) return false;
+    const body = await res.text();
+    const feed = await parser2.parseString(body);
+    return (feed.items?.length ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+function extractFeedLinks(html, baseUrl) {
+  const feeds = [];
+  const tagRegex = /<link\s[^>]*>/gi;
+  for (const match of html.matchAll(tagRegex)) {
+    const tag = match[0];
+    if (!/type=["']application\/(rss|atom)\+xml["']/i.test(tag)) continue;
+    const hrefMatch = tag.match(/href=["']([^"']+)["']/i);
+    if (!hrefMatch) continue;
+    try {
+      feeds.push(new URL(hrefMatch[1], baseUrl).href);
+    } catch {
+    }
+  }
+  return feeds;
+}
+async function discoverFromHtml(url) {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
+      signal: AbortSignal.timeout(1e4),
+      redirect: "follow"
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    return extractFeedLinks(html, url);
+  } catch {
+    return [];
+  }
+}
+async function tryCommonPaths(url) {
+  const u3 = new URL(url);
+  const base = u3.origin + u3.pathname.replace(/\/$/, "");
+  const candidates = [
+    .../* @__PURE__ */ new Set([
+      `${base}/feed`,
+      `${base}/rss`,
+      `${base}/feed.xml`,
+      `${base}/rss.xml`,
+      `${base}/atom.xml`,
+      `${base}/index.xml`,
+      `${u3.origin}/feed`,
+      `${u3.origin}/rss`,
+      `${u3.origin}/feed.xml`,
+      `${u3.origin}/rss.xml`,
+      `${u3.origin}/atom.xml`,
+      `${u3.origin}/index.xml`
+    ])
+  ];
+  const results = await Promise.allSettled(
+    candidates.map(async (candidate) => {
+      const valid = await validateFeed(candidate);
+      if (valid) return candidate;
+      throw new Error("not a feed");
+    })
+  );
+  for (const r of results) {
+    if (r.status === "fulfilled") return r.value;
+  }
+  return null;
+}
+async function discoverFeed(url) {
+  const known = knownFeedUrl(url);
+  if (known) {
+    if (await validateFeed(known)) return { method: "known", feed: known };
+  }
+  const htmlFeeds = await discoverFromHtml(url);
+  for (const feed of htmlFeeds) {
+    if (await validateFeed(feed)) return { method: "html", feed };
+  }
+  const commonFeed = await tryCommonPaths(url);
+  if (commonFeed) return { method: "path", feed: commonFeed };
+  return null;
+}
+async function mapConcurrent(items, concurrency, fn) {
+  const results = [];
+  const queue = items.map((item, i) => ({ item, i }));
+  await Promise.all(
+    Array.from({ length: concurrency }, async () => {
+      while (queue.length > 0) {
+        const { item, i } = queue.shift();
+        results[i] = await fn(item);
+      }
+    })
+  );
+  return results;
+}
+async function discoverFeeds() {
+  const existingFeeds = existsSync5("feeds.json") ? JSON.parse(readFileSync12("feeds.json", "utf-8")) : [];
+  const existingFeedSet = new Set(existingFeeds);
+  const CHECKED_PATH = "discovery/checked.json";
+  const checked = existsSync5(CHECKED_PATH) ? JSON.parse(readFileSync12(CHECKED_PATH, "utf-8")) : {};
+  const urls = [
+    ...new Set(
+      readFileSync12("discovery/found.txt", "utf-8").split("\n").map((l) => l.trim()).filter(Boolean)
+    )
+  ];
+  console.log(`Processing ${urls.length} URLs (${existingFeedSet.size} feeds already known)...
+`);
+  const results = await mapConcurrent(urls, 10, async (url) => {
+    if (shouldSkip(url)) {
+      console.log(`SKIP  ${url}`);
+      return { url, status: "skipped" };
+    }
+    if (url in checked) {
+      console.log(`DONE  ${url}`);
+      return { url, status: "skipped" };
+    }
+    try {
+      const result = await discoverFeed(url);
+      if (result) {
+        checked[url] = result.feed;
+        if (existingFeedSet.has(result.feed)) {
+          console.log(`HAVE  ${url} \u2192 ${result.feed}`);
+          return { url, status: "skipped" };
+        }
+        console.log(`FOUND ${url}
+   \u2192 ${result.feed} (${result.method})`);
+        return { url, status: "found", method: result.method, feed: result.feed };
+      }
+      checked[url] = null;
+      console.log(`NONE  ${url}`);
+      return { url, status: "none" };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      checked[url] = null;
+      console.log(`ERR   ${url}: ${msg}`);
+      return { url, status: "error", error: msg };
+    }
+  });
+  const found = results.filter((r) => r.status === "found");
+  const skipped = results.filter((r) => r.status === "skipped");
+  const noFeed = results.filter((r) => r.status === "none" || r.status === "error");
+  const newFeeds = found.map((r) => r.feed);
+  if (newFeeds.length > 0) {
+    const merged = [...existingFeeds, ...newFeeds];
+    writeFileSync9("feeds.json", JSON.stringify(merged, null, 2) + "\n");
+  }
+  writeFileSync9(CHECKED_PATH, JSON.stringify(checked, null, 2) + "\n");
+  writeFileSync9(
+    "discovery/skipped.txt",
+    skipped.map((r) => r.url).join("\n") + "\n"
+  );
+  writeFileSync9(
+    "discovery/no-feed.txt",
+    noFeed.map((r) => r.url).join("\n") + "\n"
+  );
+  console.log(`
+--- Summary ---`);
+  console.log(`New feeds found: ${newFeeds.length}`);
+  console.log(`Skipped: ${skipped.length}`);
+  console.log(`No feed found: ${noFeed.length}`);
+  if (newFeeds.length > 0) {
+    console.log(`
+Appended ${newFeeds.length} new feeds to feeds.json (${existingFeeds.length} \u2192 ${existingFeeds.length + newFeeds.length} total)`);
+  }
+}
+var import_rss_parser2, parser2, SKIP_PATTERNS;
+var init_discover_feeds = __esm({
+  "src/discover-feeds.ts"() {
+    "use strict";
+    import_rss_parser2 = __toESM(require_rss_parser(), 1);
+    parser2 = new import_rss_parser2.default();
+    SKIP_PATTERNS = [
+      /^https:\/\/github\.com/,
+      /^https:\/\/gist\.github\.com/,
+      /^https:\/\/discord\.com/,
+      /^https:\/\/x\.com/,
+      /^https:\/\/twitter\.com/,
+      /^https:\/\/(www\.)?youtube\.com/,
+      /^https:\/\/podcasts\.apple\.com/,
+      /^https:\/\/open\.spotify\.com/,
+      /^https:\/\/(www\.)?npmjs\.com/,
+      /^https:\/\/arxiv\.org/,
+      /^https:\/\/(www\.)?udemy\.com/,
+      /^https:\/\/(www\.)?pluralsight\.com/,
+      /^https:\/\/(www\.)?skool\.com/,
+      /^https:\/\/learn\.deeplearning\.ai/,
+      /^https:\/\/(www\.)?reddit\.com/,
+      /^https:\/\/twitter-thread\.com/,
+      /^https:\/\/deepwiki\.com/,
+      /^https:\/\/roadmap\.sh/
+    ];
+  }
+});
+
+// src/append-found.ts
+var append_found_exports = {};
+__export(append_found_exports, {
+  appendFound: () => appendFound
+});
+import { readFileSync as readFileSync13, appendFileSync, mkdirSync as mkdirSync7, existsSync as existsSync6 } from "fs";
+import { dirname } from "path";
+function appendFound(file, urls) {
+  mkdirSync7(dirname(file), { recursive: true });
+  const existing = new Set(
+    existsSync6(file) ? readFileSync13(file, "utf-8").split("\n").filter(Boolean) : []
+  );
+  const added = [];
+  for (const url of urls) {
+    if (!existing.has(url)) {
+      appendFileSync(file, url + "\n");
+      existing.add(url);
+      added.push(url);
+    }
+  }
+  const dupes = urls.length - added.length;
+  if (added.length) console.log(`Added ${added.length}: ${added.join(", ")}`);
+  if (dupes) console.log(`Skipped ${dupes} already in list`);
+}
+var init_append_found = __esm({
+  "src/append-found.ts"() {
+    "use strict";
+    if (process.argv[1]?.includes("append-found")) {
+      appendFound(process.argv[2], process.argv.slice(3));
+    }
+  }
+});
+
+// src/combine-lists.ts
+var combine_lists_exports = {};
+__export(combine_lists_exports, {
+  combineLists: () => combineLists
+});
+import { readFileSync as readFileSync14, writeFileSync as writeFileSync10 } from "fs";
+function combineLists(outputFile, inputFiles) {
+  const lines = /* @__PURE__ */ new Set();
+  for (const file of inputFiles) {
+    const content = readFileSync14(file, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (trimmed.startsWith("\u2192")) continue;
+      lines.add(trimmed);
+    }
+  }
+  const sorted = [...lines].sort();
+  writeFileSync10(outputFile, sorted.join("\n") + "\n");
+  console.log(`Combined ${inputFiles.length} files \u2192 ${sorted.length} unique lines \u2192 ${outputFile}`);
+}
+var init_combine_lists = __esm({
+  "src/combine-lists.ts"() {
+    "use strict";
+    if (process.argv[1]?.includes("combine-lists")) {
+      if (process.argv[2] && process.argv[3]) {
+        combineLists(process.argv[2], process.argv.slice(3));
+      } else {
+        console.error("Usage: combine-lists.ts <output-file> <input-file-1> [input-file-2] ...");
+        process.exit(1);
+      }
+    }
+  }
+});
+
 // src/cli.ts
-import { existsSync as existsSync7, mkdirSync as mkdirSync8, readFileSync as readFileSync15, writeFileSync as writeFileSync11 } from "fs";
+import { existsSync as existsSync7, mkdirSync as mkdirSync8, writeFileSync as writeFileSync11 } from "fs";
 var rawArgs = process.argv.slice(2);
 function usage() {
   console.log(`Usage: cc-newsletter <command> <data-dir> [options]
@@ -32847,8 +32846,7 @@ Commands:
   chunk-articles <list> <outdir>  Chunk article list with full content
   chunk-headers <list> <outdir>   Chunk header list
   extract-includes <out> <files...>  Extract INCLUDE paths from decision files
-  combine-lists <out> <files...>     Deduplicate and merge text files
-  html <date>                   Convert newsletter markdown to HTML`);
+  combine-lists <out> <files...>     Deduplicate and merge text files`);
 }
 async function run() {
   if (rawArgs.length === 0 || rawArgs.includes("--help") || rawArgs.includes("-h")) {
@@ -32978,33 +32976,6 @@ async function run() {
         process.exit(1);
       }
       combineLists2(args[0], args.slice(1));
-      break;
-    }
-    case "html": {
-      if (args.length < 1) {
-        console.error("Usage: cc-newsletter html <date>");
-        process.exit(1);
-      }
-      const { marked } = await Promise.resolve().then(() => (init_marked_esm(), marked_esm_exports));
-      const date = args[0];
-      const md = readFileSync15(`newsletters/${date}/newsletter.md`, "utf-8");
-      const css = existsSync7("config/style.css") ? readFileSync15("config/style.css", "utf-8") : "";
-      const body = await marked(md);
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-${css}
-</style>
-</head>
-<body>
-${body}
-</body>
-</html>`;
-      writeFileSync11(`newsletters/${date}/newsletter.html`, html);
-      console.log(`wrote newsletters/${date}/newsletter.html`);
       break;
     }
     default:
