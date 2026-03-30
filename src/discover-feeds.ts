@@ -1,10 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import Parser from "rss-parser";
 
-const parser = new Parser({
-  timeout: 10000,
-  headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
-});
+const parser = new Parser();
 
 // These categories won't have standard RSS feeds
 const SKIP_PATTERNS: RegExp[] = [
@@ -60,7 +57,14 @@ function knownFeedUrl(url: string): string | null {
 
 async function validateFeed(feedUrl: string): Promise<boolean> {
   try {
-    const feed = await parser.parseURL(feedUrl);
+    const res = await fetch(feedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
+      signal: AbortSignal.timeout(10000),
+      redirect: "follow",
+    });
+    if (!res.ok) return false;
+    const body = await res.text();
+    const feed = await parser.parseString(body);
     return (feed.items?.length ?? 0) > 0;
   } catch {
     return false;

@@ -31324,7 +31324,14 @@ function knownFeedUrl(url) {
 }
 async function validateFeed(feedUrl) {
   try {
-    const feed = await parser2.parseURL(feedUrl);
+    const res = await fetch(feedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" },
+      signal: AbortSignal.timeout(1e4),
+      redirect: "follow"
+    });
+    if (!res.ok) return false;
+    const body = await res.text();
+    const feed = await parser2.parseString(body);
     return (feed.items?.length ?? 0) > 0;
   } catch {
     return false;
@@ -31491,10 +31498,7 @@ var init_discover_feeds = __esm({
   "src/discover-feeds.ts"() {
     "use strict";
     import_rss_parser2 = __toESM(require_rss_parser(), 1);
-    parser2 = new import_rss_parser2.default({
-      timeout: 1e4,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; RSS-Discovery/1.0)" }
-    });
+    parser2 = new import_rss_parser2.default();
     SKIP_PATTERNS = [
       /^https:\/\/github\.com/,
       /^https:\/\/gist\.github\.com/,
