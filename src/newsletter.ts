@@ -8,6 +8,7 @@ import {
   rmSync,
 } from "fs";
 import { join } from "path";
+import { marked } from "marked";
 import { spawn } from "child_process";
 import { recentHeaders } from "./recent-headers.js";
 import { prepare } from "./prepare-articles.js";
@@ -293,10 +294,10 @@ export async function newsletter(args: string[]) {
 
   // Step 1: Collect recent headers
   if (!force && countFiles(runDir, /^chunk-\d+\.md$/) > 0) {
-    console.error(`[1/7] Collecting recent headers... skipped (cached)`);
+    console.error(`[1/8] Collecting recent headers... skipped (cached)`);
   } else {
-    console.error(`[1/7] Collecting recent headers...`);
-    writeProgress(runDir, { step: 1, stepName: "collect", stepsTotal: 7 });
+    console.error(`[1/8] Collecting recent headers...`);
+    writeProgress(runDir, { step: 1, stepName: "collect", stepsTotal: 8 });
     recentHeaders([String(days), "--date", date]);
   }
 
@@ -318,9 +319,9 @@ export async function newsletter(args: string[]) {
     existsSync(relevantPath) &&
     countFiles(runDir, /^filter-\d+\.md$/) === chunkFiles.length
   ) {
-    console.error(`[2/7] Filtering for relevance... skipped (cached)`);
+    console.error(`[2/8] Filtering for relevance... skipped (cached)`);
   } else {
-    console.error(`[2/7] Filtering for relevance...`);
+    console.error(`[2/8] Filtering for relevance...`);
     wipeFiles(runDir, /^filter-\d+\.md$/);
     if (existsSync(relevantPath)) unlinkSync(relevantPath);
 
@@ -344,7 +345,7 @@ export async function newsletter(args: string[]) {
         writeProgress(runDir, {
           step: 2,
           stepName: "filter",
-          stepsTotal: 7,
+          stepsTotal: 8,
           chunksTotal: chunkFiles.length,
           chunksDone: filterResults.length,
         });
@@ -384,9 +385,9 @@ export async function newsletter(args: string[]) {
     prioritiseChunkCount > 0 &&
     prioritiseResultCount === prioritiseChunkCount
   ) {
-    console.error(`[3/7] Prioritising for deep reading... skipped (cached)`);
+    console.error(`[3/8] Prioritising for deep reading... skipped (cached)`);
   } else {
-    console.error(`[3/7] Prioritising for deep reading...`);
+    console.error(`[3/8] Prioritising for deep reading...`);
     wipeFiles(runDir, /^prioritise-\d+\.md$/);
     if (existsSync(shortlistPath)) unlinkSync(shortlistPath);
     if (existsSync(prioritiseDir)) rmSync(prioritiseDir, { recursive: true });
@@ -421,7 +422,7 @@ export async function newsletter(args: string[]) {
         writeProgress(runDir, {
           step: 3,
           stepName: "prioritise",
-          stepsTotal: 7,
+          stepsTotal: 8,
           chunksTotal: prioritiseChunks.length,
           chunksDone: prioritiseResults.length,
         });
@@ -461,9 +462,9 @@ export async function newsletter(args: string[]) {
     deepReadChunkCount > 0 &&
     evaluationResultCount === deepReadChunkCount
   ) {
-    console.error(`[4/7] Deep reading and evaluating... skipped (cached)`);
+    console.error(`[4/8] Deep reading and evaluating... skipped (cached)`);
   } else {
-    console.error(`[4/7] Deep reading and evaluating...`);
+    console.error(`[4/8] Deep reading and evaluating...`);
     wipeFiles(runDir, /^evaluations-\d+\.md$/);
     if (existsSync(evaluationsPath)) unlinkSync(evaluationsPath);
     if (existsSync(deepReadDir)) rmSync(deepReadDir, { recursive: true });
@@ -498,7 +499,7 @@ export async function newsletter(args: string[]) {
         writeProgress(runDir, {
           step: 4,
           stepName: "deep-read",
-          stepsTotal: 7,
+          stepsTotal: 8,
           chunksTotal: deepReadChunks.length,
           chunksDone: evaluationFiles.length,
         });
@@ -533,11 +534,11 @@ export async function newsletter(args: string[]) {
   let mode: "single" | "grouped";
 
   if (!force && (singleDirExists || hasGroupDirs)) {
-    console.error(`[5/7] Preparing article content... skipped (cached)`);
+    console.error(`[5/8] Preparing article content... skipped (cached)`);
     mode = singleDirExists ? "single" : "grouped";
   } else {
-    console.error(`[5/7] Preparing article content...`);
-    writeProgress(runDir, { step: 5, stepName: "prepare", stepsTotal: 7 });
+    console.error(`[5/8] Preparing article content...`);
+    writeProgress(runDir, { step: 5, stepName: "prepare", stepsTotal: 8 });
     if (existsSync(newsletterInputDir))
       rmSync(newsletterInputDir, { recursive: true });
     const prepareResult = prepare(evaluationsPath, newsletterInputDir);
@@ -552,10 +553,10 @@ export async function newsletter(args: string[]) {
   const evaluations = readFileSync(evaluationsPath, "utf-8");
 
   if (!force && existsSync(draftPath)) {
-    console.error(`[6/7] Writing newsletter... skipped (cached)`);
+    console.error(`[6/8] Writing newsletter... skipped (cached)`);
   } else if (mode === "single") {
-    console.error(`[6/7] Writing newsletter...`);
-    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 7 });
+    console.error(`[6/8] Writing newsletter...`);
+    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 8 });
 
     const singleDir = join(newsletterInputDir, "single");
     const articleChunks = readdirSync(singleDir)
@@ -579,8 +580,8 @@ export async function newsletter(args: string[]) {
     console.error(`      written in ${elapsed}s → ${draftPath}`);
   } else {
     // Grouped mode
-    console.error(`[6/7] Writing newsletter...`);
-    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 7 });
+    console.error(`[6/8] Writing newsletter...`);
+    writeProgress(runDir, { step: 6, stepName: "write", stepsTotal: 8 });
 
     const groupDirs = readdirSync(newsletterInputDir, { withFileTypes: true })
       .filter((f) => f.isDirectory() && f.name.startsWith("group-"))
@@ -683,10 +684,10 @@ export async function newsletter(args: string[]) {
 
   // Step 7: Editorial pass
   if (!force && existsSync(newsletterPath)) {
-    console.error(`[7/7] Editorial pass... skipped (cached)`);
+    console.error(`[7/8] Editorial pass... skipped (cached)`);
   } else {
-    console.error(`[7/7] Editorial pass...`);
-    writeProgress(runDir, { step: 7, stepName: "editorial", stepsTotal: 7 });
+    console.error(`[7/8] Editorial pass...`);
+    writeProgress(runDir, { step: 7, stepName: "editorial", stepsTotal: 8 });
 
     const draftContent = readFileSync(draftPath, "utf-8");
     const editorialPrompt = `=== NEWSLETTER DESIGN ===\n${designDoc}\n\n=== DRAFT ===\n${draftContent}`;
@@ -723,7 +724,31 @@ export async function newsletter(args: string[]) {
     );
   }
 
-  writeProgress(runDir, { step: 7, stepName: "done", stepsTotal: 7 });
+  // Step 8: Generate HTML
+  const htmlPath = join(runDir, "newsletter.html");
+  console.error(`[8/8] Generating HTML...`);
+  const finalMd = readFileSync(newsletterPath, "utf-8");
+  const css = existsSync("config/style.css")
+    ? readFileSync("config/style.css", "utf-8")
+    : "";
+  const body = await marked(finalMd);
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+${css}
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+  writeFileSync(htmlPath, html);
+  console.error(`      → ${htmlPath}`);
+
+  writeProgress(runDir, { step: 8, stepName: "done", stepsTotal: 8 });
 
   const totalElapsed = ((performance.now() - totalStart) / 1000).toFixed(0);
   console.error(`\nDone in ${totalElapsed}s → ${newsletterPath}`);

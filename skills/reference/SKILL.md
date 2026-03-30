@@ -41,7 +41,7 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/my
 
 ### Newsletter pipeline
 
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full 7-step newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md`. Progress written to `newsletters/YYYY-MM-DD/progress.json`
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. Progress written to `newsletters/YYYY-MM-DD/progress.json`
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js recent-headers <data-dir> [days] [--date YYYY-MM-DD]` — Collect recent article headers into chunks in `newsletters/YYYY-MM-DD/`
 
 ### Source discovery
@@ -58,10 +58,6 @@ These are used internally by the newsletter pipeline but can be run standalone:
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js chunk-headers <data-dir> <list-file> <output-dir>` — Chunk a list of headers (no article bodies)
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js extract-includes <data-dir> <output-file> <input-files...>` — Extract INCLUDE header paths from decision files
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js combine-lists <data-dir> <output-file> <input-files...>` — Deduplicate and merge text list files
-
-### Output
-
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js html <data-dir> <date>` — Convert `newsletters/YYYY-MM-DD/newsletter.md` to HTML
 
 ### Scheduling
 
