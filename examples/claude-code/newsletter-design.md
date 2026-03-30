@@ -3,13 +3,51 @@
 ## Overview
 
 An intelligence briefing on Claude Code development, synthesized from a wide
-range of blogs and release notes of varying quality. Written for an experienced
-developer's personal consumption. Output is markdown.
+range of blogs and release notes of varying quality.
 
-## Sections
+## Audience
 
-Sections appear in this order. Every claim, reference, and quote must link
-back to its source.
+An experienced developer's personal consumption.
+
+## Tone
+
+Straight-talking and matter-of-fact. Says what happened, says why it matters,
+moves on. Doesn't dress things up or reach for dramatic framing. If something
+is important, the facts make that clear without editorial theatrics.
+
+Has opinions but holds them lightly. Will call something out as noise or flag
+when a claim doesn't hold up, but doesn't grandstand about it. More "this
+doesn't hold up because X" than a clever put-down.
+
+Respects the reader's time. Assumes you're busy and smart. Doesn't
+over-explain, doesn't sell you on why you should care. If it's in the
+newsletter, it's there because it matters — that's implicit.
+
+Warm but not chatty. Not a robot delivering a briefing, but not trying to be
+your friend either. A colleague who's good at their job and doesn't waste
+words. Occasionally dry, never forced.
+
+Not corporate announcement style. Not breathless tech blog excitement. Not
+"we're thrilled to announce." Not hedging every opinion with "it depends."
+
+## Rules
+
+- Every claim, reference, and quote links back to its source. No orphaned
+  assertions. Use inline markdown links.
+- Maximum 2,500 words. Never exceed 3,000. These are ceilings, not targets.
+  If it's a quiet week and 1,500 words covers everything worth saying, stop
+  at 1,500. Don't pad to fill. When the material exceeds the budget, curate
+  harder — don't write shorter. Pick the items that matter most and give them
+  space. Items that don't clear the bar get cut entirely, not squeezed. Drop
+  the least impactful items within each section rather than dropping entire
+  sections.
+- Aim to include one code snippet, prompt pattern, config example, or tool
+  invocation somewhere in the newsletter each week. It lives in whichever
+  section it fits naturally — not forced if nothing warrants it.
+
+## Content Format
+
+# The Claude Code Review
 
 ### 1. The Briefing
 
@@ -91,54 +129,3 @@ on other adjacent things worth knowing about.
 
 Closes the newsletter. A direct quote from something published that week.
 Cited and linked. No explanation — just the quote and its source.
-
-## The Snippet
-
-We aim to include one code snippet, prompt pattern, config example, or tool
-invocation somewhere in the newsletter each week. It lives in whichever section
-it fits naturally — not a standalone section. Not forced if nothing warrants it
-that week.
-
-## Citations
-
-Every claim, every reference, every quote links back to its source. No orphaned
-assertions. Use inline markdown links.
-
-## Tone
-
-Straight-talking and matter-of-fact. Says what happened, says why it matters,
-moves on. Doesn't dress things up or reach for dramatic framing. If something
-is important, the facts make that clear without editorial theatrics.
-
-Has opinions but holds them lightly. Will call something out as noise or flag
-when a claim doesn't hold up, but doesn't grandstand about it. More "this
-doesn't hold up because X" than a clever put-down.
-
-Respects the reader's time. Assumes you're busy and smart. Doesn't
-over-explain, doesn't sell you on why you should care. If it's in the
-newsletter, it's there because it matters — that's implicit.
-
-Warm but not chatty. Not a robot delivering a briefing, but not trying to be
-your friend either. A colleague who's good at their job and doesn't waste
-words. Occasionally dry, never forced.
-
-Not corporate announcement style. Not breathless tech blog excitement. Not
-"we're thrilled to announce." Not hedging every opinion with "it depends."
-
-## Word Budget
-
-Maximum 2,500 words. Never exceed 3,000.
-
-These are ceilings, not targets. If it's a quiet week and 1,500 words covers
-everything worth saying, stop at 1,500. Don't pad to fill.
-
-When the material exceeds the budget, curate harder — don't write shorter.
-Don't compress ten items into terse one-liners — pick the five that matter
-most and give them the space they deserve. Every item that makes the cut
-should have enough room to say something substantive. Items that don't clear
-the bar get cut entirely, not squeezed.
-
-When deciding what to cut, drop the least impactful items from within each
-section rather than dropping entire sections. Every section should still appear,
-but some weeks a section might have one item instead of three. That's fine —
-a section with one strong item is better than three weak ones.
