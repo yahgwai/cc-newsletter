@@ -240,7 +240,66 @@ Tell the user the style is being generated in the background and continue to
 the next step. When the agent completes, write the returned CSS to
 `${CLAUDE_PLUGIN_DATA}/<name>/config/style.css` yourself.
 
-## Step 10: First run
+## Step 10: Email delivery (optional)
+
+Ask the user if they'd like the newsletter emailed automatically when it's
+generated. Make clear this is optional — if they skip it, the newsletter is
+still saved to disk as markdown and HTML.
+
+If they want to skip, move on immediately.
+
+If yes, explain briefly: most email providers don't let scripts use your
+normal password. Instead, you generate an "app password" — a separate
+password just for this purpose. It's a one-time setup in your email
+provider's security settings.
+
+Providers that support app passwords for SMTP:
+- **Gmail** — smtp.gmail.com, port 587
+- **Fastmail** — smtp.fastmail.com, port 587
+- **Outlook/Hotmail** — smtp.office365.com, port 587
+- **iCloud** — smtp.mail.me.com, port 587
+- **Yahoo** — smtp.mail.yahoo.com, port 587
+
+Ask which provider they use, or let them enter custom SMTP details. Based on
+their choice, pre-fill the host and port.
+
+Collect:
+1. SMTP username (usually their email address)
+2. App password
+3. "From" address with display name (default to `Newsletter Title <smtp-user>`)
+4. Recipient email addresses (can just be themselves)
+5. Subject line template (suggest `{{title}} - {{date}}` and explain the
+   placeholders: `{{title}}` is extracted from the newsletter, `{{date}}` is
+   the edition date in YYYY-MM-DD format)
+
+Write the config directly:
+```
+Write ${CLAUDE_PLUGIN_DATA}/<name>/config/email.json
+```
+
+File format:
+```json
+{
+  "smtp": {
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "user": "you@gmail.com",
+    "pass": "the-app-password"
+  },
+  "from": "Newsletter Name <you@gmail.com>",
+  "to": ["reader@example.com"],
+  "subject": "{{title}} - {{date}}"
+}
+```
+
+Check that `config/email.json` is listed in `${CLAUDE_PLUGIN_DATA}/<name>/.gitignore`.
+If not, add it — the file contains a password and should not be committed.
+
+Do not test the SMTP connection. They'll see it work when the newsletter runs.
+Tell the user they can edit `config/email.json` later to add recipients or
+switch providers.
+
+## Step 11: First run
 
 Tell the user the configuration is complete, then ask if they'd like to run
 an ingest now to collect data for the first newsletter. Let them know it
@@ -265,7 +324,7 @@ If they decline either step, let them know they can run these commands later:
 2. `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name>` to generate a newsletter from collected content
 3. `/cc-newsletter:discover <name>` to find more sources iteratively
 
-## Step 11: Scheduling
+## Step 12: Scheduling
 
 Ask the user if they'd like to schedule automatic ingestion and newsletter
 generation. If they decline, skip this step.

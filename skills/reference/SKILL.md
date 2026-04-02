@@ -41,8 +41,30 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/my
 
 ### Newsletter pipeline
 
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. Progress written to `newsletters/YYYY-MM-DD/progress.json`
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. If `config/email.json` exists, emails the result. Progress written to `newsletters/YYYY-MM-DD/progress.json`
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js recent-headers <data-dir> [days] [--date YYYY-MM-DD]` — Collect recent article headers into chunks in `newsletters/YYYY-MM-DD/`
+
+### Email delivery
+
+The newsletter pipeline optionally sends the generated HTML via email after each run. To enable, create `config/email.json` in the data directory:
+
+```json
+{
+  "smtp": {
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "user": "you@gmail.com",
+    "pass": "your-app-password"
+  },
+  "from": "Newsletter Name <you@gmail.com>",
+  "to": ["reader1@example.com", "reader2@example.com"],
+  "subject": "{{title}} - {{date}}"
+}
+```
+
+Common SMTP providers: Gmail (smtp.gmail.com:587), Fastmail (smtp.fastmail.com:587), Outlook (smtp.office365.com:587), iCloud (smtp.mail.me.com:587), Yahoo (smtp.mail.yahoo.com:587). Use an app password, not your regular password.
+
+Subject template placeholders: `{{date}}` is replaced with the newsletter date (YYYY-MM-DD), `{{title}}` with the newsletter title. When `config/email.json` is absent, email is silently skipped. SMTP failures are logged but do not prevent the newsletter from being saved to disk.
 
 ### Source discovery
 

@@ -49,7 +49,7 @@ async function run() {
       }
 
       if (!existsSync(".gitignore")) {
-        writeFileSync(".gitignore", "content/\ndiscovery/\nnewsletters/\n");
+        writeFileSync(".gitignore", "content/\ndiscovery/\nnewsletters/\nconfig/email.json\n");
         console.log("wrote .gitignore");
       }
 
