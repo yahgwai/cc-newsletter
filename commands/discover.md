@@ -1,7 +1,6 @@
 ---
 name: discover
 description: Discover websites and online sources relevant to the newsletter's subject
-disable-model-invocation: true
 allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js *), Read
 ---
 

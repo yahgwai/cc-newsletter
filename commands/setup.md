@@ -1,7 +1,6 @@
 ---
 name: setup
 description: Set up a new newsletter — configure subject, sections, tone, visual style, and discover sources
-disable-model-invocation: true
 allowed-tools: WebSearch, WebFetch, Bash(node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js *), Bash(crontab *), Read, Write, Agent
 ---
 
