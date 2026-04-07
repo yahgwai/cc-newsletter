@@ -345,9 +345,12 @@ Present the proposed schedule clearly and let the user adjust times, cadences,
 or days before installing.
 
 When installing, use marker comments so the entries can be found later.
-Ensure `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` is set at the top of the crontab
-(check if it already exists before adding a duplicate):
+Ensure the following environment variables are set at the top of the crontab
+(check if each already exists before adding a duplicate). Use `dirname $(which claude)`
+to find the directory containing the `claude` binary — cron has a minimal PATH and
+won't find it otherwise:
 ```
+PATH=<directory containing claude>:/usr/local/bin:/usr/bin:/bin
 CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
 
 # cc-newsletter:<name>:ingest

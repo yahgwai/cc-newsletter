@@ -41,7 +41,7 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/my
 
 ### Newsletter pipeline
 
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. If `config/email.json` exists, emails the result. Progress written to `newsletters/YYYY-MM-DD/progress.json`. Requires `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` (set in code, but also ensure it's in the crontab env)
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. If `config/email.json` exists, emails the result. Progress written to `newsletters/YYYY-MM-DD/progress.json`. Requires `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` (set in code, but also ensure it's in the crontab env). The crontab also needs `PATH` to include `~/.local/bin` so the `claude` CLI is found during summarisation
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js recent-headers <data-dir> [days] [--date YYYY-MM-DD]` — Collect recent article headers into chunks in `newsletters/YYYY-MM-DD/`
 
 ### Email delivery
@@ -83,4 +83,4 @@ These are used internally by the newsletter pipeline but can be run standalone:
 
 ### Scheduling
 
-The setup wizard (`/cc-newsletter:setup`) offers to install cron jobs for automatic ingestion and newsletter generation. Crontab entries use marker comments (`# cc-newsletter:<name>:<ingest|newsletter>`) so they can be identified and managed later. Run `crontab -l | grep cc-newsletter` to see installed schedules.
+The setup wizard (`/cc-newsletter:setup`) offers to install cron jobs for automatic ingestion and newsletter generation. Crontab entries use marker comments (`# cc-newsletter:<name>:<ingest|newsletter>`) so they can be identified and managed later. The crontab must have `PATH=<dir containing claude>:/usr/local/bin:/usr/bin:/bin` (use `dirname $(which claude)` to find the right directory) and `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` set at the top. Run `crontab -l | grep cc-newsletter` to see installed schedules.
