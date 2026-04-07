@@ -38,6 +38,8 @@ async function callClaude(
   return new Promise((resolve, reject) => {
     const env = { ...process.env };
     delete env.CLAUDECODE;
+    // Ensure sufficient output token budget for long-form newsletter content
+    env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ??= "64000";
 
     const proc = spawn(
       "claude",

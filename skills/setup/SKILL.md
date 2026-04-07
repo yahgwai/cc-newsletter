@@ -344,8 +344,12 @@ Suggest default schedules:
 Present the proposed schedule clearly and let the user adjust times, cadences,
 or days before installing.
 
-When installing, use marker comments so the entries can be found later:
+When installing, use marker comments so the entries can be found later.
+Ensure `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` is set at the top of the crontab
+(check if it already exists before adding a duplicate):
 ```
+CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
+
 # cc-newsletter:<name>:ingest
 <cron-expr> node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name> >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
 # cc-newsletter:<name>:newsletter

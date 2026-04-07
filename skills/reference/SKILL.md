@@ -41,7 +41,7 @@ node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/my
 
 ### Newsletter pipeline
 
-- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. If `config/email.json` exists, emails the result. Progress written to `newsletters/YYYY-MM-DD/progress.json`
+- `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter <data-dir> [--date YYYY-MM-DD] [--days N]` — Run the full newsletter pipeline. Defaults: today's date, 7 days. Produces `newsletters/YYYY-MM-DD/newsletter.md` and `newsletter.html`. If `config/email.json` exists, emails the result. Progress written to `newsletters/YYYY-MM-DD/progress.json`. Requires `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` (set in code, but also ensure it's in the crontab env)
 - `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js recent-headers <data-dir> [days] [--date YYYY-MM-DD]` — Collect recent article headers into chunks in `newsletters/YYYY-MM-DD/`
 
 ### Email delivery

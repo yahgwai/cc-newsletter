@@ -43447,6 +43447,7 @@ async function callClaude2(systemPrompt, userPrompt, model, label) {
   return new Promise((resolve, reject) => {
     const env = { ...process.env };
     delete env.CLAUDECODE;
+    env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ??= "64000";
     const proc = spawn2(
       "claude",
       ["-p", "--model", model, "--allowedTools", "", "--system-prompt", systemPrompt + NO_TOOLS],
