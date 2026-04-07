@@ -10,7 +10,7 @@
       "name": "cc-newsletter",
       "description": "Newsletter content collection and generation toolkit",
       "version": "0.1.0",
-      "source": "."
+      "source": ".."
     }
   ]
 }
