@@ -1,11 +1,16 @@
 {
-  "version": "1",
+  "name": "cc-newsletter",
+  "version": "1.0.0",
+  "owner": {
+    "name": "yahgwai",
+    "email": "yahgwai@users.noreply.github.com"
+  },
   "plugins": [
     {
       "name": "cc-newsletter",
-      "source": "..",
+      "description": "Newsletter content collection and generation toolkit",
       "version": "0.1.0",
-      "description": "Newsletter content collection and generation toolkit"
+      "source": "."
     }
   ]
 }
