@@ -1,6 +1,6 @@
 {
   "name": "cc-newsletter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Newsletter content collection and generation toolkit",
   "repository": "https://github.com/yahgwai/cc-newsletter",
   "license": "MIT"
