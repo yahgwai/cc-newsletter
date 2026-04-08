@@ -1,21 +1,36 @@
 # cc-newsletter
 
-A Claude Code plugin that creates fully automated newsletters by aggregating RSS feeds. Tell it what you want to write about, and it finds sources, collects content, and produces a finished newsletter on a recurring schedule.
+A Claude Code plugin for automated generation of custom newsletters from RSS feeds. It works by periodically pulling data from RSS feeds of interest, summarising them and then synthesizing the result into a newsletter.
 
 ![Example newsletter output](examples/claude-code/example.png)
 
 ## Install
 
-Add the marketplace, then install the plugin:
-
+Add the marketplace:
 ```
 /plugin marketplace add yahgwai/cc-newsletter
+```
+then install the plugin
+```
 /plugin install cc-newsletter@yahgwai-cc-newsletter
 ```
 
-## Quick start
+## Setup wizard
 
-Run the setup wizard. It walks you through choosing a subject, defining your sections, finding sources, and scheduling automated runs.
+Run the setup wizard to design and configure a newsletter tailored to your needs.
+
+1. **Subject** — nail down what the newsletter covers
+2. **Title** — pick a name and scaffold the data directory
+3. **Audience** — define who it's for
+4. **Tone** — set the editorial voice
+5. **Sections** — design 5-8 content sections
+6. **Design document** — generate the editorial guide
+7. **Source discovery** — find RSS feeds, GitHub repos, and sitemaps via parallel search
+8. **Gap analysis** — check section coverage and adjust
+9. **Visual style** — choose colors, typography, and layout for the HTML output
+10. **Email delivery** — optionally configure SMTP for automatic sending
+11. **First run** — ingest content and generate the first edition
+12. **Scheduling** — set up cron jobs for recurring ingest and generation
 
 ```
 /cc-newsletter:setup
@@ -23,13 +38,22 @@ Run the setup wizard. It walks you through choosing a subject, defining your sec
 
 ## How it works
 
-The setup wizard helps you describe what your newsletter should cover and how it should read. Once configured, the plugin runs on a schedule:
+Once configured, two processes run on a cron schedule:
 
-1. Pulls new content from RSS feeds
-2. Reads and summarizes each article
-3. Picks the most relevant pieces for the current edition
-4. Groups them by theme and writes the newsletter
-5. Outputs the result as markdown and HTML
+### Ingestion (6 hourly by default)
+
+Pulls new content from your configured sources — RSS feeds, GitHub releases, and documentation sitemaps — and stores each article locally. Then any new articles without summaries are batched and sent to Claude for summarisation, so the content is ready when it's time to write.
+
+### Newsletter generation (weekly by default)
+
+Reads through the past week's summarised articles and produces a finished newsletter:
+
+1. **Filter** — scans all article summaries and discards anything irrelevant to your sections
+2. **Prioritise** — reads the full text of promising articles to build a shortlist
+3. **Evaluate** — deep-reads shortlisted articles and assigns them to sections
+4. **Write** — drafts each section using the selected articles and your design document
+5. **Editorial** — polishes prose, checks facts against sources, and tightens the whole piece
+6. **Publish** — renders to HTML with your custom styles and optionally emails the result
 
 ## Skills
 

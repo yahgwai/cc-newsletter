@@ -12,6 +12,41 @@ All commands use the prefix: `node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js <
 
 When invoked from skills, the data dir is `${CLAUDE_PLUGIN_DATA}/<name>`.
 
+## Data directory structure
+
+Each newsletter lives in its own data directory with this layout:
+
+```
+my-newsletter/
+├── feeds.json                    # RSS feed URLs to sync
+├── github-releases.json          # GitHub repos to track releases from
+├── sitemaps.json                 # Documentation sitemaps to crawl
+├── config/
+│   ├── newsletter-design.md      # Editorial guide: subject, tone, sections
+│   ├── style.css                 # Custom CSS for HTML rendering
+│   └── email.json                # SMTP config (gitignored)
+├── content/
+│   └── <source-slug>/            # One directory per feed/repo/sitemap
+│       ├── <article-slug>.md           # Article body (markdown)
+│       └── <article-slug>-header.yaml  # Metadata: title, link, date, tokens, summary
+├── discovery/
+│   ├── found.txt                 # Raw URLs found during source discovery
+│   ├── feeds.txt                 # Validated RSS feeds extracted from found.txt
+│   └── checked.json              # URLs already checked for feeds
+└── newsletters/
+    └── <YYYY-MM-DD>/             # One directory per edition
+        ├── chunk-*.md            # Intermediate: article header chunks
+        ├── filter-*.md           # Intermediate: relevance filter results
+        ├── relevant.txt          # Articles that passed the filter
+        ├── shortlist.txt         # Articles prioritised for deep reading
+        ├── evaluations-*.md      # Intermediate: deep read evaluations
+        ├── evaluations.md        # Combined evaluations
+        ├── draft.md              # Pre-editorial draft
+        ├── newsletter.md         # Final newsletter (markdown)
+        ├── newsletter.html       # Final newsletter (HTML with style.css)
+        └── progress.json         # Pipeline step completion tracking
+```
+
 ## High-level workflows
 
 **First-time setup:**
