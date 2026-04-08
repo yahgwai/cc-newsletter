@@ -1,6 +1,8 @@
 # cc-newsletter
 
-A Claude Code plugin for automated generation of custom newsletters from RSS feeds. It works by periodically pulling data from RSS feeds of interest, summarising them and then synthesizing the result into a newsletter.
+A Claude Code plugin that produces a weekly newsletter for you. Tell it what you're interested in, point it at some RSS feeds, and it handles the rest — collecting articles, reading them, picking what matters, and writing it up.
+
+Here's [an example edition](https://claudecodereview.substack.com/p/the-claude-code-review-6-april-2026) it produced for a Claude Code newsletter.
 
 ![Example newsletter output](examples/claude-code/example.png)
 
@@ -19,22 +21,10 @@ then install the plugin
 
 Run the setup wizard to design and configure a newsletter tailored to your needs.
 
-1. **Subject** — nail down what the newsletter covers
-2. **Title** — pick a name and scaffold the data directory
-3. **Audience** — define who it's for
-4. **Tone** — set the editorial voice
-5. **Sections** — design 5-8 content sections
-6. **Design document** — generate the editorial guide
-7. **Source discovery** — find RSS feeds, GitHub repos, and sitemaps via parallel search
-8. **Gap analysis** — check section coverage and adjust
-9. **Visual style** — choose colors, typography, and layout for the HTML output
-10. **Email delivery** — optionally configure SMTP for automatic sending
-11. **First run** — ingest content and generate the first edition
-12. **Scheduling** — set up cron jobs for recurring ingest and generation
-
 ```
 /cc-newsletter:setup
 ```
+
 
 ## How it works
 

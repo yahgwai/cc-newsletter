@@ -370,3 +370,10 @@ CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
 
 Write the updated crontab by piping the full contents to `crontab -`.
 Confirm what was installed and when the first run will happen.
+
+## Wrap up
+
+Let the user know that nothing is set in stone — they can ask Claude Code to
+change any part of the configuration later (sections, tone, sources, schedule,
+styling, email settings). The `/cc-newsletter:reference` skill has the details
+on how everything fits together, so Claude Code can make changes on their behalf.
