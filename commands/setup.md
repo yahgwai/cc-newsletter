@@ -124,14 +124,18 @@ How it's written — the tone from Step 4, as prose guidance.
 
 # <Newsletter Title>
 
-### <Section 1>
+### 1. <Section Name>
 <editorial guidance>
 
-### <Section 2>
+### 2. <Section Name>
 <editorial guidance>
 
 ...
 ```
+
+Number sections sequentially starting from 1. The pipeline uses these
+numbers as machine-readable identifiers — sections must be numbered, and
+the numbering must be sequential with no gaps.
 
 Show the user what you've written and let them request changes before moving on.
 
@@ -320,7 +324,17 @@ If yes, run:
 node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name>
 ```
 
-When ingest completes, ask if they'd like to generate the first newsletter.
+When ingest completes, touch the ingest marker so the scheduled wrapper
+installed in Step 12 sees the manual run as recent and correctly skips until
+the staleness threshold has elapsed:
+```
+touch ${CLAUDE_PLUGIN_DATA}/<name>/.last-ingest
+```
+
+Without this, the first scheduled fire would find no marker and immediately
+re-run the ingest.
+
+Then ask if they'd like to generate the first newsletter.
 Let them know it takes about 20 minutes — time for another coffee.
 
 If yes, run:
@@ -338,38 +352,155 @@ If they decline either step, let them know they can run these commands later:
 Ask the user if they'd like to schedule automatic ingestion and newsletter
 generation. If they decline, skip this step.
 
-If yes, read the existing crontab with `crontab -l` to see what's already
-scheduled. Look for existing `# cc-newsletter:` markers to understand what
-other newsletters are running and when.
+If yes, ask only one question: which day of the week should their newsletter
+be generated? Default: Monday. Map the answer to a number 1-7 where 1=Monday,
+2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday, 7=Sunday (call this
+`CHOSEN_DOW`).
 
-Suggest default schedules:
-- **Ingest**: every 6 hours, defaulting to 0:00, 6:00, 12:00, 18:00. If other
-  newsletters already have ingest jobs, default offset by 1 hour to avoid
-  overlapping API usage.
-- **Newsletter**: weekly, defaulting to Sunday at 8:00 PM. If other newsletters
-  already have newsletter jobs, default offset by a day (Monday, Tuesday, etc.)
-  since generation takes ~20 minutes of heavy API usage.
+Explain the model in plain terms: "Ingest runs hourly, but only actually pulls
+data if the last successful ingest was more than 6 hours ago. Newsletter
+generation runs hourly too, but only kicks off on your chosen day (or the
+first opportunity after, if your laptop was asleep) — and only if a fresh
+ingest has already happened on that day, so the newsletter never generates
+on stale data. Wrapper scripts handle the staleness checks — you can edit
+them later to change the cadence or day."
 
-Present the proposed schedule clearly and let the user adjust times, cadences,
-or days before installing.
+Read the existing crontab with `crontab -l` and look for existing
+`# cc-newsletter:<name>:ingest` and `# cc-newsletter:<name>:newsletter`
+markers FOR THIS NEWSLETTER (not others). If they exist, the new entries
+will replace them.
 
-When installing, use marker comments so the entries can be found later.
-Ensure the following environment variables are set at the top of the crontab
-(check if each already exists before adding a duplicate). Use `dirname $(which claude)`
-to find the directory containing the `claude` binary — cron has a minimal PATH and
-won't find it otherwise:
-```
-PATH=<directory containing claude>:/usr/local/bin:/usr/bin:/bin
-CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
+Then do the following:
 
-# cc-newsletter:<name>:ingest
-<cron-expr> node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js ingest ${CLAUDE_PLUGIN_DATA}/<name> >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
-# cc-newsletter:<name>:newsletter
-<cron-expr> node ${CLAUDE_PLUGIN_ROOT}/dist/cc-newsletter.js newsletter ${CLAUDE_PLUGIN_DATA}/<name> >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
-```
+1. Ensure `${CLAUDE_PLUGIN_DATA}/<name>/bin/` exists:
 
-Write the updated crontab by piping the full contents to `crontab -`.
-Confirm what was installed and when the first run will happen.
+    ```
+    mkdir -p ${CLAUDE_PLUGIN_DATA}/<name>/bin
+    ```
+
+2. Write `${CLAUDE_PLUGIN_DATA}/<name>/bin/ingest-if-stale.sh` with the
+   following content. Expand `${CLAUDE_PLUGIN_DATA}/<name>` and
+   `${CLAUDE_PLUGIN_ROOT}` to absolute paths as you write the file:
+
+    ```bash
+    #!/bin/bash
+    set -e
+    DATA="${CLAUDE_PLUGIN_DATA}/<name>"
+    ROOT="${CLAUDE_PLUGIN_ROOT}"
+    MARKER="$DATA/.last-ingest"
+    THRESHOLD_SEC=21600  # 6h
+
+    AGE=$(node -e "try { const s = require('fs').statSync('$MARKER'); console.log(Math.floor((Date.now() - s.mtimeMs)/1000)); } catch { console.log('stale'); }")
+    if [ "$AGE" != "stale" ] && [ "$AGE" -lt "$THRESHOLD_SEC" ]; then
+      exit 0
+    fi
+
+    node "$ROOT/dist/cc-newsletter.js" ingest "$DATA"
+    touch "$MARKER"
+    ```
+
+3. Write `${CLAUDE_PLUGIN_DATA}/<name>/bin/newsletter-if-stale.sh` with the
+   following content. Expand `${CLAUDE_PLUGIN_DATA}/<name>` and
+   `${CLAUDE_PLUGIN_ROOT}` to absolute paths, and substitute `CHOSEN_DOW=1`
+   with the user's chosen number (1-7):
+
+    ```bash
+    #!/bin/bash
+    set -e
+    DATA="${CLAUDE_PLUGIN_DATA}/<name>"
+    ROOT="${CLAUDE_PLUGIN_ROOT}"
+    CHOSEN_DOW=1  # 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
+
+    BOUNDARY=$(node -e "
+      const chosen = $CHOSEN_DOW;
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      const dow = d.getDay() || 7;
+      const back = dow >= chosen ? dow - chosen : 7 - chosen + dow;
+      d.setDate(d.getDate() - back);
+      console.log(Math.floor(d.getTime() / 1000));
+    ")
+
+    LATEST=$(node -e "
+      const fs = require('fs'), path = require('path');
+      const root = '$DATA/newsletters';
+      if (!fs.existsSync(root)) { console.log(''); process.exit(0); }
+      let best = 0;
+      for (const d of fs.readdirSync(root)) {
+        try {
+          const s = fs.statSync(path.join(root, d, 'newsletter.md'));
+          if (s.mtimeMs > best) best = s.mtimeMs;
+        } catch {}
+      }
+      console.log(best ? Math.floor(best / 1000) : '');
+    ")
+
+    if [ -n "$LATEST" ] && [ "$LATEST" -ge "$BOUNDARY" ]; then
+      exit 0
+    fi
+
+    INGEST_MTIME=$(node -e "try { const s = require('fs').statSync('$DATA/.last-ingest'); console.log(Math.floor(s.mtimeMs/1000)); } catch { console.log(''); }")
+    if [ -z "$INGEST_MTIME" ] || [ "$INGEST_MTIME" -lt "$BOUNDARY" ]; then
+      exit 0
+    fi
+
+    NOW=$(date +%s)
+    if [ -n "$LATEST" ]; then
+      DAYS=$(( (NOW - LATEST) / 86400 + 1 ))
+      [ "$DAYS" -lt 7 ] && DAYS=7
+    else
+      DAYS=7
+    fi
+
+    exec node "$ROOT/dist/cc-newsletter.js" newsletter "$DATA" --days "$DAYS"
+    ```
+
+4. Make both wrappers executable:
+
+    ```
+    chmod +x ${CLAUDE_PLUGIN_DATA}/<name>/bin/*.sh
+    ```
+
+5. Install the crontab entries. Read the current crontab with `crontab -l`.
+   The crontab must have two environment variable lines at the very top
+   (above all entries) — if they aren't already present from a prior
+   setup, add them:
+
+    ```
+    PATH=<claude-dir>:/usr/local/bin:/usr/bin:/bin
+    CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
+    ```
+
+    Replace `<claude-dir>` with the output of `dirname "$(which claude)"`
+    run in your current shell (usually `$HOME/.local/bin` expanded to an
+    absolute path). These are required because cron's default PATH doesn't
+    include `claude`, and both `ingest` (via summarise) and `newsletter`
+    spawn it. Don't duplicate if another newsletter's setup already added
+    them — they're global to the crontab.
+
+    Then remove any existing entries for this newsletter (matched by the
+    marker comments `# cc-newsletter:<name>:ingest` and
+    `# cc-newsletter:<name>:newsletter` plus the line immediately after
+    each), and append the new entries:
+
+    ```
+    # cc-newsletter:<name>:ingest
+    0 * * * * ${CLAUDE_PLUGIN_DATA}/<name>/bin/ingest-if-stale.sh >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
+    # cc-newsletter:<name>:newsletter
+    0 * * * * ${CLAUDE_PLUGIN_DATA}/<name>/bin/newsletter-if-stale.sh >> ${CLAUDE_PLUGIN_DATA}/<name>/cron.log 2>&1
+    ```
+
+    Pipe the full updated crontab (env lines + all entries) to `crontab -`.
+
+6. Confirm what was installed and describe expected behavior: next ingest
+   within the hour (first fire finds no `.last-ingest` if this is a fresh
+   install, or respects the 6h threshold if Step 11 touched it). Next
+   newsletter on the first hourly fire at or after the chosen day's 00:00.
+
+Note on editing later: the user can change the staleness threshold by editing
+`THRESHOLD_SEC` in the ingest wrapper, or the chosen day by editing
+`CHOSEN_DOW` in the newsletter wrapper. Both are plain numbers near the top
+of their respective files.
 
 ## Wrap up
 

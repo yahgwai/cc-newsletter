@@ -28,13 +28,13 @@ Run the setup wizard to design and configure a newsletter tailored to your needs
 
 ## How it works
 
-Once configured, two processes run on a cron schedule:
+Once configured, two processes run on a cron schedule. Both fire hourly and gate themselves — ingest runs every few hours, the newsletter runs weekly on your chosen day, and both catch up automatically if your laptop was asleep when the scheduled time came around.
 
-### Ingestion (6 hourly by default)
+### Ingestion
 
-Pulls new content from your configured sources — RSS feeds, GitHub releases, and documentation sitemaps — and stores each article locally. Then any new articles without summaries are batched and sent to Claude for summarisation, so the content is ready when it's time to write.
+Pulls new content from your configured sources — RSS feeds, GitHub releases, and documentation sitemaps — and stores each article locally. Then any new articles without summaries are batched and sent to Claude for summarisation, so the content is ready when it's time to write. Skips itself unless it's been more than 6 hours since the last successful run.
 
-### Newsletter generation (weekly by default)
+### Newsletter generation
 
 Reads through the past week's summarised articles and produces a finished newsletter:
 

@@ -5,15 +5,6 @@ import { chunkArticles } from "./chunk-articles.js";
 
 const AFFINITY_THRESHOLD = 50_000;
 
-const SECTION_KEY_MAP: Record<string, string> = {
-  "New Features": "features",
-  "Security & Bugs": "security",
-  "Article of the Week": "article",
-  "Techniques & Workflows": "techniques",
-  "What Are They Talking About & What Are They Building?": "building",
-  "The Wider World": "wider",
-};
-
 export function prepare(
   evaluationsFile: string,
   outputDir: string
@@ -22,7 +13,7 @@ export function prepare(
 
   interface Entry {
     headerPath: string;
-    section: string;
+    sections: number[];
     summary: string;
     articleWords: number;
   }
@@ -47,14 +38,15 @@ export function prepare(
     );
     if (!decisionMatch || decisionMatch[1] !== "INCLUDE") continue;
 
-    // Extract section: "**Section:** Name" or "INCLUDE — Name"
-    let section = "Unknown";
-    const sectionMatch = text.match(/\*\*Section:\*\*\s*(.+)$/m);
-    const inlineMatch = text.match(/^INCLUDE\s*[—–-]\s*(.+)$/m);
+    // Extract section numbers from "**Section:** <digits>[; <digits>]..."
+    const sections: number[] = [];
+    const sectionMatch = text.match(/\*\*Section:\*\*\s*([\d;\s]+?)(?:\n|$)/);
     if (sectionMatch) {
-      section = sectionMatch[1].trim();
-    } else if (inlineMatch) {
-      section = inlineMatch[1].trim();
+      const parts = sectionMatch[1].split(/[;\s]+/).map((s) => s.trim()).filter(Boolean);
+      for (const part of parts) {
+        const n = Number(part);
+        if (Number.isInteger(n)) sections.push(n);
+      }
     }
 
     // Extract summary: "**Summary:** text" or remaining lines
@@ -74,7 +66,7 @@ export function prepare(
 
     entries.push({
       headerPath,
-      section,
+      sections,
       summary,
       articleWords,
     });
@@ -101,10 +93,15 @@ export function prepare(
     );
     return { mode: "single", totalWords };
   } else {
-    const groups = new Map<string, string[]>();
+    const groups = new Map<number | "other", string[]>();
     for (const entry of entries) {
-      const primarySection = entry.section.split(";")[0].trim();
-      const key = SECTION_KEY_MAP[primarySection] || "other";
+      const primary = entry.sections[0];
+      const key: number | "other" = Number.isInteger(primary) ? primary : "other";
+      if (key === "other") {
+        console.error(
+          `warning: ${entry.headerPath} has no valid section number — routing to group-other`
+        );
+      }
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(entry.headerPath);
     }

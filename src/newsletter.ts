@@ -20,7 +20,7 @@ import { loadEmailConfig, sendNewsletter } from "./send-email.js";
 
 const PARALLEL = 10;
 const REQUEST_INTERVAL_MS = 2500;
-const CALL_TIMEOUT_MS = 600_000;
+const CALL_TIMEOUT_MS = 1_200_000;
 
 async function callClaude(
   systemPrompt: string,
@@ -146,19 +146,17 @@ const FILTER_SYSTEM_PROMPT = `You will receive a newsletter design document and 
 headers with summaries.
 
 Review every header and decide whether it could be relevant to any
-section of the newsletter — not just Claude Code content, but also
-anything that might fit in The Wider World, Security & Bugs,
-Techniques, or community discussion.
+section of the newsletter.
 
 Write a decision for every header using this format, separated by ---:
 
 ## Header: path/to/header.yaml
 **Decision:** INCLUDE
-**Reason:** Covers a new Claude Code CLI feature relevant to New Features section
+**Reason:** Covers a topic that fits one of the newsletter's sections
 ---
 ## Header: path/to/other.yaml
 **Decision:** EXCLUDE
-**Reason:** Generic AI industry news, not specific enough for any section
+**Reason:** Off-topic, does not fit any section
 ---
 
 This is a filtering pass — cast a wide net. When in doubt, include it.`;
@@ -191,21 +189,24 @@ separated by ---:
 
 ## Header: path/to/header.yaml
 **Decision:** INCLUDE or EXCLUDE
-**Section:** Section Name
+**Section:** <N>
 **Summary:** 2-3 sentences on the substance — what you actually learned
 from reading it, not just the header summary
 ---
+
+Where <N> is the section number from the design doc's Content Format
+(e.g. 2 for the second section). Use the number only, not the name.
+
+Do not assign articles to synthesis sections — sections the design doc
+describes as summarising across others, or as consisting of a selected
+quote. Those are written at assembly time, not from article content.
 
 For articles that should NOT be included, still list them with
 **Section:** N/A and a one-line summary explaining the exclusion so
 the decision is auditable.
 
-Section names: New Features, Security & Bugs, Article of the Week,
-Techniques & Workflows, What Are They Talking About & What Are They
-Building?, The Wider World
-
 For articles that fit multiple sections, use semicolons:
-**Section:** New Features; Security & Bugs
+**Section:** 2; 3
 Put the primary section first.`;
 
 const WRITE_SINGLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes for
@@ -225,21 +226,22 @@ Write only the newsletter sections that these articles map to,
 following the design doc format, tone, and citation requirements. Do
 not write other sections.
 
-Section to write: {SECTION}
+Section to write: #{SECTION}. Consult the design doc's Content Format
+for the section's name, editorial guidance, and expected format.
 
 Output only the section markdown, starting with the section heading.`;
 
-const ASSEMBLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes, and
-section drafts written by different authors.
+const ASSEMBLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes for
+all articles, and section drafts written for some of the sections.
 
-Assemble the complete newsletter:
-1. Write The Briefing (3-4 paragraphs synthesizing across all
-   sections), ending with Signal and Noise
-2. Select the Hot Take quote from the source material
-3. Place one code snippet, prompt pattern, config example, or tool
-   invocation somewhere natural if not already present
-4. Ensure the whole thing reads as one coherent voice
-5. Stay within the word budget (max 2,500, ceiling 3,000)
+Some sections in the design doc's Content Format may have no draft —
+typically opening summaries or closing pieces that synthesise across
+or quote from others. Write those now using the drafted sections and
+evaluation notes as source material.
+
+Assemble the complete newsletter in the order given by the design doc,
+with one coherent voice. Stay within the word budget (max 2,500 words,
+ceiling 3,000).
 
 Output the complete newsletter markdown.`;
 
@@ -257,17 +259,6 @@ prose tightening, items verified correct)
 
 === REVISED NEWSLETTER ===
 The complete revised newsletter markdown`;
-
-// --- Section key ↔ name mapping ---
-
-const SECTION_NAME_MAP: Record<string, string> = {
-  features: "New Features",
-  security: "Security & Bugs",
-  article: "Article of the Week",
-  techniques: "Techniques & Workflows",
-  building: "What Are They Talking About & What Are They Building?",
-  wider: "The Wider World",
-};
 
 // --- Main pipeline ---
 
@@ -594,8 +585,7 @@ export async function newsletter(args: string[]) {
       .sort();
 
     interface SectionTask {
-      key: string;
-      sectionName: string;
+      sectionNumber: number;
       chunkFile: string;
       chunkIndex: number;
       totalChunks: number;
@@ -603,16 +593,21 @@ export async function newsletter(args: string[]) {
 
     const tasks: SectionTask[] = [];
     for (const groupDir of groupDirs) {
-      const key = groupDir.replace("group-", "");
-      const sectionName = SECTION_NAME_MAP[key] || key;
+      const suffix = groupDir.replace("group-", "");
+      const sectionNumber = parseInt(suffix, 10);
+      if (!Number.isInteger(sectionNumber)) {
+        console.error(
+          `      warning: skipping ${groupDir} (not a numbered section — unclassifiable articles will not be written)`
+        );
+        continue;
+      }
       const groupPath = join(newsletterInputDir, groupDir);
       const groupChunks = readdirSync(groupPath)
         .filter((f) => /^chunk-\d+\.md$/.test(f))
         .sort();
       for (let i = 0; i < groupChunks.length; i++) {
         tasks.push({
-          key,
-          sectionName,
+          sectionNumber,
           chunkFile: join(groupPath, groupChunks[i]),
           chunkIndex: i,
           totalChunks: groupChunks.length,
@@ -623,7 +618,7 @@ export async function newsletter(args: string[]) {
     // Derive expected section files from tasks
     const expectedSections = tasks.map((task) => {
       const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
-      return `section-${task.key}${suffix}.md`;
+      return `section-${task.sectionNumber}${suffix}.md`;
     });
     const allSectionsExist = expectedSections.every((f) =>
       existsSync(join(runDir, f))
@@ -637,20 +632,20 @@ export async function newsletter(args: string[]) {
         const chunkContent = readFileSync(task.chunkFile, "utf-8");
         const systemPrompt = WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE.replace(
           "{SECTION}",
-          task.sectionName
+          String(task.sectionNumber)
         );
         const userPrompt = `=== NEWSLETTER DESIGN ===\n${designDoc}\n\n=== EVALUATIONS ===\n${evaluations}\n\n=== ARTICLES ===\n${chunkContent}`;
         const start = performance.now();
 
-        const result = await callClaude(systemPrompt, userPrompt, "opus", `section ${task.key} ${task.chunkIndex + 1}/${task.totalChunks}`);
+        const result = await callClaude(systemPrompt, userPrompt, "opus", `section #${task.sectionNumber} ${task.chunkIndex + 1}/${task.totalChunks}`);
         const elapsed = ((performance.now() - start) / 1000).toFixed(0);
 
         const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
-        const outPath = join(runDir, `section-${task.key}${suffix}.md`);
+        const outPath = join(runDir, `section-${task.sectionNumber}${suffix}.md`);
         writeFileSync(outPath, result);
 
         console.error(
-          `      section ${task.key} chunk ${task.chunkIndex + 1}/${task.totalChunks} ✓ (${elapsed}s)`
+          `      section #${task.sectionNumber} chunk ${task.chunkIndex + 1}/${task.totalChunks} ✓ (${elapsed}s)`
         );
       }
 

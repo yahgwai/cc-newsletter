@@ -31712,13 +31712,14 @@ function prepare(evaluationsFile, outputDir) {
       /(?:\*\*Decision:\*\*\s*|^)(INCLUDE|EXCLUDE)/m
     );
     if (!decisionMatch || decisionMatch[1] !== "INCLUDE") continue;
-    let section = "Unknown";
-    const sectionMatch = text.match(/\*\*Section:\*\*\s*(.+)$/m);
-    const inlineMatch = text.match(/^INCLUDE\s*[—–-]\s*(.+)$/m);
+    const sections = [];
+    const sectionMatch = text.match(/\*\*Section:\*\*\s*([\d;\s]+?)(?:\n|$)/);
     if (sectionMatch) {
-      section = sectionMatch[1].trim();
-    } else if (inlineMatch) {
-      section = inlineMatch[1].trim();
+      const parts = sectionMatch[1].split(/[;\s]+/).map((s) => s.trim()).filter(Boolean);
+      for (const part of parts) {
+        const n = Number(part);
+        if (Number.isInteger(n)) sections.push(n);
+      }
     }
     let summary = "";
     const summaryMatch = text.match(/\*\*Summary:\*\*\s*([\s\S]+?)$/m);
@@ -31733,7 +31734,7 @@ function prepare(evaluationsFile, outputDir) {
     }
     entries.push({
       headerPath,
-      section,
+      sections,
       summary,
       articleWords
     });
@@ -31759,8 +31760,13 @@ ${entries.length} articles, ${totalWords} words \u2014 chunked to ${chunksDir}/`
   } else {
     const groups = /* @__PURE__ */ new Map();
     for (const entry of entries) {
-      const primarySection = entry.section.split(";")[0].trim();
-      const key = SECTION_KEY_MAP[primarySection] || "other";
+      const primary = entry.sections[0];
+      const key = Number.isInteger(primary) ? primary : "other";
+      if (key === "other") {
+        console.error(
+          `warning: ${entry.headerPath} has no valid section number \u2014 routing to group-other`
+        );
+      }
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(entry.headerPath);
     }
@@ -31777,21 +31783,13 @@ ${entries.length} articles, ${totalWords} words \u2014 grouped into ${groups.siz
     return { mode: "grouped", totalWords };
   }
 }
-var AFFINITY_THRESHOLD, SECTION_KEY_MAP;
+var AFFINITY_THRESHOLD;
 var init_prepare_articles = __esm({
   "src/prepare-articles.ts"() {
     "use strict";
     init_util();
     init_chunk_articles();
     AFFINITY_THRESHOLD = 5e4;
-    SECTION_KEY_MAP = {
-      "New Features": "features",
-      "Security & Bugs": "security",
-      "Article of the Week": "article",
-      "Techniques & Workflows": "techniques",
-      "What Are They Talking About & What Are They Building?": "building",
-      "The Wider World": "wider"
-    };
     if (process.argv[1]?.includes("prepare-articles")) {
       if (process.argv[2] && process.argv[3]) {
         prepare(process.argv[2], process.argv[3]);
@@ -43784,14 +43782,19 @@ ${articlesContent}`;
     const groupDirs = readdirSync4(newsletterInputDir, { withFileTypes: true }).filter((f) => f.isDirectory() && f.name.startsWith("group-")).map((f) => f.name).sort();
     const tasks = [];
     for (const groupDir of groupDirs) {
-      const key = groupDir.replace("group-", "");
-      const sectionName = SECTION_NAME_MAP[key] || key;
+      const suffix = groupDir.replace("group-", "");
+      const sectionNumber = parseInt(suffix, 10);
+      if (!Number.isInteger(sectionNumber)) {
+        console.error(
+          `      warning: skipping ${groupDir} (not a numbered section \u2014 unclassifiable articles will not be written)`
+        );
+        continue;
+      }
       const groupPath = join8(newsletterInputDir, groupDir);
       const groupChunks = readdirSync4(groupPath).filter((f) => /^chunk-\d+\.md$/.test(f)).sort();
       for (let i = 0; i < groupChunks.length; i++) {
         tasks.push({
-          key,
-          sectionName,
+          sectionNumber,
           chunkFile: join8(groupPath, groupChunks[i]),
           chunkIndex: i,
           totalChunks: groupChunks.length
@@ -43800,7 +43803,7 @@ ${articlesContent}`;
     }
     const expectedSections = tasks.map((task) => {
       const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
-      return `section-${task.key}${suffix}.md`;
+      return `section-${task.sectionNumber}${suffix}.md`;
     });
     const allSectionsExist = expectedSections.every(
       (f) => existsSync5(join8(runDir, f))
@@ -43812,7 +43815,7 @@ ${articlesContent}`;
         const chunkContent = readFileSync12(task.chunkFile, "utf-8");
         const systemPrompt = WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE.replace(
           "{SECTION}",
-          task.sectionName
+          String(task.sectionNumber)
         );
         const userPrompt = `=== NEWSLETTER DESIGN ===
 ${designDoc}
@@ -43823,13 +43826,13 @@ ${evaluations}
 === ARTICLES ===
 ${chunkContent}`;
         const start = performance.now();
-        const result = await callClaude2(systemPrompt, userPrompt, "opus", `section ${task.key} ${task.chunkIndex + 1}/${task.totalChunks}`);
+        const result = await callClaude2(systemPrompt, userPrompt, "opus", `section #${task.sectionNumber} ${task.chunkIndex + 1}/${task.totalChunks}`);
         const elapsed = ((performance.now() - start) / 1e3).toFixed(0);
         const suffix = task.totalChunks > 1 ? `-${task.chunkIndex + 1}` : "";
-        const outPath = join8(runDir, `section-${task.key}${suffix}.md`);
+        const outPath = join8(runDir, `section-${task.sectionNumber}${suffix}.md`);
         writeFileSync8(outPath, result);
         console.error(
-          `      section ${task.key} chunk ${task.chunkIndex + 1}/${task.totalChunks} \u2713 (${elapsed}s)`
+          `      section #${task.sectionNumber} chunk ${task.chunkIndex + 1}/${task.totalChunks} \u2713 (${elapsed}s)`
         );
       }
       await runPool(tasks, PARALLEL, (task) => writeSectionDraft(task));
@@ -43935,7 +43938,7 @@ ${body}
   console.error(`
 Done in ${totalElapsed}s \u2192 ${newsletterPath}`);
 }
-var PARALLEL, REQUEST_INTERVAL_MS2, CALL_TIMEOUT_MS, NO_TOOLS, FILTER_SYSTEM_PROMPT, PRIORITISE_SYSTEM_PROMPT, DEEP_READ_SYSTEM_PROMPT, WRITE_SINGLE_SYSTEM_PROMPT, WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE, ASSEMBLE_SYSTEM_PROMPT, EDITORIAL_SYSTEM_PROMPT, SECTION_NAME_MAP;
+var PARALLEL, REQUEST_INTERVAL_MS2, CALL_TIMEOUT_MS, NO_TOOLS, FILTER_SYSTEM_PROMPT, PRIORITISE_SYSTEM_PROMPT, DEEP_READ_SYSTEM_PROMPT, WRITE_SINGLE_SYSTEM_PROMPT, WRITE_SECTION_SYSTEM_PROMPT_TEMPLATE, ASSEMBLE_SYSTEM_PROMPT, EDITORIAL_SYSTEM_PROMPT;
 var init_newsletter = __esm({
   "src/newsletter.ts"() {
     "use strict";
@@ -43949,7 +43952,7 @@ var init_newsletter = __esm({
     init_send_email();
     PARALLEL = 10;
     REQUEST_INTERVAL_MS2 = 2500;
-    CALL_TIMEOUT_MS = 6e5;
+    CALL_TIMEOUT_MS = 12e5;
     NO_TOOLS = `
 
 Do not use any tools. Do not search the web. Do not read or write files. Output your complete response as text.`;
@@ -43957,19 +43960,17 @@ Do not use any tools. Do not search the web. Do not read or write files. Output 
 headers with summaries.
 
 Review every header and decide whether it could be relevant to any
-section of the newsletter \u2014 not just Claude Code content, but also
-anything that might fit in The Wider World, Security & Bugs,
-Techniques, or community discussion.
+section of the newsletter.
 
 Write a decision for every header using this format, separated by ---:
 
 ## Header: path/to/header.yaml
 **Decision:** INCLUDE
-**Reason:** Covers a new Claude Code CLI feature relevant to New Features section
+**Reason:** Covers a topic that fits one of the newsletter's sections
 ---
 ## Header: path/to/other.yaml
 **Decision:** EXCLUDE
-**Reason:** Generic AI industry news, not specific enough for any section
+**Reason:** Off-topic, does not fit any section
 ---
 
 This is a filtering pass \u2014 cast a wide net. When in doubt, include it.`;
@@ -44000,21 +44001,24 @@ separated by ---:
 
 ## Header: path/to/header.yaml
 **Decision:** INCLUDE or EXCLUDE
-**Section:** Section Name
+**Section:** <N>
 **Summary:** 2-3 sentences on the substance \u2014 what you actually learned
 from reading it, not just the header summary
 ---
+
+Where <N> is the section number from the design doc's Content Format
+(e.g. 2 for the second section). Use the number only, not the name.
+
+Do not assign articles to synthesis sections \u2014 sections the design doc
+describes as summarising across others, or as consisting of a selected
+quote. Those are written at assembly time, not from article content.
 
 For articles that should NOT be included, still list them with
 **Section:** N/A and a one-line summary explaining the exclusion so
 the decision is auditable.
 
-Section names: New Features, Security & Bugs, Article of the Week,
-Techniques & Workflows, What Are They Talking About & What Are They
-Building?, The Wider World
-
 For articles that fit multiple sections, use semicolons:
-**Section:** New Features; Security & Bugs
+**Section:** 2; 3
 Put the primary section first.`;
     WRITE_SINGLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes for
 all articles, and the full article texts.
@@ -44032,20 +44036,21 @@ Write only the newsletter sections that these articles map to,
 following the design doc format, tone, and citation requirements. Do
 not write other sections.
 
-Section to write: {SECTION}
+Section to write: #{SECTION}. Consult the design doc's Content Format
+for the section's name, editorial guidance, and expected format.
 
 Output only the section markdown, starting with the section heading.`;
-    ASSEMBLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes, and
-section drafts written by different authors.
+    ASSEMBLE_SYSTEM_PROMPT = `You will receive a newsletter design document, evaluation notes for
+all articles, and section drafts written for some of the sections.
 
-Assemble the complete newsletter:
-1. Write The Briefing (3-4 paragraphs synthesizing across all
-   sections), ending with Signal and Noise
-2. Select the Hot Take quote from the source material
-3. Place one code snippet, prompt pattern, config example, or tool
-   invocation somewhere natural if not already present
-4. Ensure the whole thing reads as one coherent voice
-5. Stay within the word budget (max 2,500, ceiling 3,000)
+Some sections in the design doc's Content Format may have no draft \u2014
+typically opening summaries or closing pieces that synthesise across
+or quote from others. Write those now using the drafted sections and
+evaluation notes as source material.
+
+Assemble the complete newsletter in the order given by the design doc,
+with one coherent voice. Stay within the word budget (max 2,500 words,
+ceiling 3,000).
 
 Output the complete newsletter markdown.`;
     EDITORIAL_SYSTEM_PROMPT = `You will receive a newsletter design document and a draft newsletter.
@@ -44062,14 +44067,6 @@ prose tightening, items verified correct)
 
 === REVISED NEWSLETTER ===
 The complete revised newsletter markdown`;
-    SECTION_NAME_MAP = {
-      features: "New Features",
-      security: "Security & Bugs",
-      article: "Article of the Week",
-      techniques: "Techniques & Workflows",
-      building: "What Are They Talking About & What Are They Building?",
-      wider: "The Wider World"
-    };
   }
 });
 
