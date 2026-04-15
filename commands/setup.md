@@ -387,6 +387,9 @@ Then do the following:
     set -e
     DATA="${CLAUDE_PLUGIN_DATA}/<name>"
     ROOT="${CLAUDE_PLUGIN_ROOT}"
+    if [ ! -f "$ROOT/dist/cc-newsletter.js" ]; then
+      ROOT=$(ls -dt "$(dirname "$ROOT")"/*/ 2>/dev/null | head -1 | sed 's:/$::')
+    fi
     MARKER="$DATA/.last-ingest"
     THRESHOLD_SEC=21600  # 6h
 
@@ -409,6 +412,9 @@ Then do the following:
     set -e
     DATA="${CLAUDE_PLUGIN_DATA}/<name>"
     ROOT="${CLAUDE_PLUGIN_ROOT}"
+    if [ ! -f "$ROOT/dist/cc-newsletter.js" ]; then
+      ROOT=$(ls -dt "$(dirname "$ROOT")"/*/ 2>/dev/null | head -1 | sed 's:/$::')
+    fi
     CHOSEN_DOW=1  # 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
 
     BOUNDARY=$(node -e "
