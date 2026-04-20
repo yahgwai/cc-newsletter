@@ -2,7 +2,7 @@
 
 A Claude Code plugin that produces a weekly newsletter for you. Tell it what you're interested in, point it at some RSS feeds, and it handles the rest — collecting articles, reading them, picking what matters, and writing it up.
 
-Here's [an example edition](https://claudecodereview.substack.com/p/the-claude-code-review-6-april-2026) it produced for a Claude Code newsletter.
+Here's [an example edition](https://claudecodereview.substack.com/p/the-claude-code-review-20-april-2026) it produced for a Claude Code newsletter.
 
 ![Example newsletter output](examples/claude-code/example.png)
 
