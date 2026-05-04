@@ -209,7 +209,7 @@ To add scheduling to an existing newsletter (or re-add it after it was skipped a
 
     NOW=$(date +%s)
     if [ -n "$LATEST" ]; then
-      DAYS=$(( (NOW - LATEST) / 86400 + 1 ))
+      DAYS=$(( (NOW - LATEST) / 86400 ))
       [ "$DAYS" -lt 7 ] && DAYS=7
     else
       DAYS=7
